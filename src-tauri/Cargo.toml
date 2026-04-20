@@ -9,6 +9,10 @@ tauri-build = { version = "1", features = [] }
 [dependencies]
 tauri = { version = "1", features = ["shell-open"] }
 
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
 [profile.release]
 panic = "abort"
 codegen-units = 1
