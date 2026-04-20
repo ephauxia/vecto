@@ -1,0 +1,67 @@
+{
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "devPath": "../src",
+    "distDir": "../src"
+  },
+  "package": {
+    "productName": "VECTO",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": { "all": false, "open": true },
+      "dialog": {
+        "all": true,
+        "open": true,
+        "save": false
+      },
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "scope": ["$DOCUMENT/*", "$DOWNLOAD/*", "$VIDEO/*", "$AUDIO/*", "$HOME/*", "**"]
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": ["**"]
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Entertainment",
+      "copyright": "",
+      "externalBin": [],
+      "icon": [
+        "icons/icon.ico"
+      ],
+      "identifier": "com.vecto.player",
+      "longDescription": "",
+      "macOS": { "frameworks": [], "minimumSystemVersion": "", "exceptionDomain": "" },
+      "resources": ["../src/fonts/*"],
+      "shortDescription": "VECTO Media Player",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "updater": { "active": false },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "VECTO",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 640,
+        "minHeight": 400
+      }
+    ]
+  }
+}
