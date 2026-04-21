@@ -427,7 +427,8 @@ th{position:relative}
     <div class="header-controls">
       <input type="text" id="url-input" placeholder="Stream URL, M3U or M3U8 Playlist...">
       <button class="btn btn-accent" id="url-add">ADD</button>
-      <label id="file-label">+ FILE / M3U<input type="file" id="file-input" multiple accept="video/*,audio/*,.m3u,.m3u8,.mpd,.mkv,.avi,.mov,.wmv,.flv,.ts,.webm"></label>
+      <button class="btn" id="file-label" title="Open Files">+ FILE / M3U</button>
+      <input type="file" id="file-input" multiple accept="video/*,audio/*,.m3u,.m3u8,.mpd,.mkv,.avi,.mov,.wmv,.flv,.ts,.webm" style="display:none">
       <button class="btn" id="queue-btn">QUEUE <span id="queue-count"></span></button>
       <button class="btn" id="history-btn" style="margin-left:auto" title="Playback History">↺ HISTORY</button>
     </div>
@@ -2148,6 +2149,75 @@ function parseM3U(text){
   return items;
 }
 
+// ── Tauri Native Path Handler ────────────────────────────────────────────────
+async function handleTauriPaths(paths) {
+  const m3u=[], vid=[], subs=[];
+  let batchCoverPath = null;
+
+  for (const p of paths) {
+    const name = p.split(/[\\/]/).pop();
+    if(/\.(m3u|m3u8)$/i.test(name)) m3u.push(p);
+    else if(/\.(vtt|srt|ass|ssa)$/i.test(name)) subs.push(p);
+    else if(/^(cover|album|folder|art|front|back)\./i.test(name)&&/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(name)) batchCoverPath = p;
+    else vid.push(p);
+  }
+
+  // Handle M3U Playlists natively
+  for (const p of m3u) {
+    try {
+      const text = await window.__TAURI__.fs.readTextFile(p);
+      addItems(parseM3U(text));
+    } catch(e) { notif('Error reading M3U'); }
+  }
+
+  // Handle Videos & Audio
+  if (vid.length) {
+    const items = [];
+    for (const p of vid) {
+      const name = p.split(/[\\/]/).pop();
+      const tauriUrl = window.__TAURI__.tauri.convertFileSrc(p);
+      
+      const item = {
+        title: name,
+        url: tauriUrl,
+        dur: -1,
+        subtitles: [],
+        resumeKey: 'l' + hashKey(p), // Hash the absolute path instead of size
+        audioMeta: null,
+        filePath: p // <--- THIS IS THE FIX. Guaranteed absolute path.
+      };
+
+      if (/^audio\//i.test(name) || /\.(mp3|flac|aac|ogg|wav|m4a|opus|wma|ape)$/i.test(name)) {
+        try {
+          // jsmediatags can read from URLs as well as File objects
+          item.audioMeta = await readAudioMeta(tauriUrl);
+          if (item.audioMeta?.title) item.title = item.audioMeta.title;
+        } catch(e) {}
+
+        if (batchCoverPath) {
+          const coverUrl = window.__TAURI__.tauri.convertFileSrc(batchCoverPath);
+          if (!item.audioMeta) item.audioMeta = { art: coverUrl, artist: null, album: null, title: null };
+          else if (!item.audioMeta.art) item.audioMeta.art = coverUrl;
+        }
+      }
+      items.push(item);
+    }
+    addItems(items);
+  }
+
+  // Handle Subtitles
+  if (subs.length) {
+    try {
+      const p = subs[0];
+      const name = p.split(/[\\/]/).pop();
+      const text = await window.__TAURI__.fs.readTextFile(p);
+      const vttText = convertSubsToVtt(text, name);
+      const blobUrl = URL.createObjectURL(new Blob([vttText], { type: 'text/vtt' }));
+      attachSubtitleToCurrentItem(name.replace(/\.[^/.]+$/, ''), 'en', blobUrl);
+    } catch(e) {}
+  }
+}
+
 // ── File / URL handling ───────────────────────────────────────────────────────
 async function handleFileList(files){
   const m3u=[],vid=[],subs=[];
@@ -2533,13 +2603,33 @@ document.querySelectorAll('.hist-filter').forEach(btn=>{
   });
 });
 
-fsBtn.addEventListener('click',toggleFS);
-function toggleFS(){if(!document.fullscreenElement)playerWrap.requestFullscreen().catch(()=>{});else document.exitFullscreen();}
-document.addEventListener('fullscreenchange',()=>{
-  const fs=!!document.fullscreenElement;
-  fsBtn.title=fs?'Exit fullscreen (F)':'Fullscreen (F)';
-  fsQBtn.style.display=fs?'':'none'; 
-  if(!fs) hideFsQueue();
+fsBtn.addEventListener('click', toggleFS);
+
+async function toggleFS() {
+  if (window.__TAURI__) {
+    // Tauri OS-level Fullscreen
+    const appWindow = window.__TAURI__.window.appWindow;
+    const isFS = await appWindow.isFullscreen();
+    await appWindow.setFullscreen(!isFS);
+    
+    // Update UI manually (the web 'fullscreenchange' event won't fire for OS fullscreen)
+    const fs = !isFS;
+    fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
+    fsQBtn.style.display = fs ? '' : 'none'; 
+    if (!fs) hideFsQueue();
+  } else {
+    // Standard Web Fallback
+    if (!document.fullscreenElement) playerWrap.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  }
+}
+
+// Keep this listener alive for the standard web fallback
+document.addEventListener('fullscreenchange', () => {
+  const fs = !!document.fullscreenElement;
+  fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
+  fsQBtn.style.display = fs ? '' : 'none'; 
+  if (!fs) hideFsQueue();
 });
 
 queueBtn.addEventListener('click',()=>{
@@ -2569,17 +2659,64 @@ clearBtn.addEventListener('click', () => {
 
 urlAdd.addEventListener('click',()=>{handleUrl(urlInput.value);urlInput.value='';});
 urlInput.addEventListener('keydown',e=>{if(e.key==='Enter'){handleUrl(urlInput.value);urlInput.value='';}});
-fileInput.addEventListener('change',e=>{handleFileList(Array.from(e.target.files));e.target.value='';});
+
+// Use Tauri Native Dialog if available, otherwise fallback to web input
+const fileLabelBtn = document.getElementById('file-label');
+fileLabelBtn.addEventListener('click', async (e) => {
+  if (window.__TAURI__) {
+    e.preventDefault();
+    try {
+      const selected = await window.__TAURI__.dialog.open({
+        multiple: true,
+        filters: [{
+          name: 'Media',
+          extensions: ['m3u', 'm3u8', 'mpd', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'ts', 'webm', 'mp4', 'mp3', 'flac', 'aac', 'ogg', 'wav', 'm4a', 'opus']
+        }]
+      });
+      if (selected) {
+        handleTauriPaths(Array.isArray(selected) ? selected : [selected]);
+      }
+    } catch (err) {
+      console.error('Tauri dialog failed:', err);
+    }
+  } else {
+    document.getElementById('file-input').click();
+  }
+});
+
+document.getElementById('file-input').addEventListener('change', e => {
+  handleFileList(Array.from(e.target.files));
+  e.target.value = '';
+});
 
 document.addEventListener('click',()=>{speedMenu.classList.remove('open');closeSpeedDialog();closeSettings();});
 speedMenu.addEventListener('click',e=>e.stopPropagation());
 
-// ── Drag & drop ───────────────────────────────────────────────────────────────
-playerWrap.addEventListener('dragover',e=>{e.preventDefault();dropOverlay.style.display='flex';});
-playerWrap.addEventListener('dragleave',()=>dropOverlay.style.display='');
-playerWrap.addEventListener('drop',e=>{e.preventDefault();dropOverlay.style.display='';handleFileList(Array.from(e.dataTransfer.files));});
-window.addEventListener('dragover',e=>e.preventDefault());
-window.addEventListener('drop',e=>{e.preventDefault();handleFileList(Array.from(e.dataTransfer.files));});
+// ── Drag & drop (UPDATED FOR TAURI) ───────────────────────────────────────────
+playerWrap.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.style.display='flex'; });
+playerWrap.addEventListener('dragleave', () => dropOverlay.style.display='');
+
+// Suppress web drop events inside Tauri so we don't get duplicates
+playerWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.style.display='';
+  if (!window.__TAURI__) handleFileList(Array.from(e.dataTransfer.files));
+});
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!window.__TAURI__) handleFileList(Array.from(e.dataTransfer.files));
+});
+
+// Intercept Tauri's native absolute file paths!
+if (window.__TAURI__) {
+  window.__TAURI__.event.listen('tauri://file-drop', event => {
+    dropOverlay.style.display = '';
+    if (event.payload && event.payload.length > 0) {
+      handleTauriPaths(event.payload);
+    }
+  });
+}
 
 // ── Mobile long-press ─────────────────────────────────────────────────────────
 let touchLPTimer=null,touchLPActive=false;
