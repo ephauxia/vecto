@@ -154,7 +154,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .drop-label{font-family:var(--font-display);font-weight:600;letter-spacing:.12em;color:var(--accent)}
 
 /* NOTIFICATION */
-#notif{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(7,7,15,.84);border:1px solid rgba(255,179,71,.25);color:#fff;font-size:11px;letter-spacing:.1em;padding:5px 14px;border-radius:16px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:30;white-space:nowrap;font-family:var(--font-display);font-weight:600}
+#notif{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(7,7,15,.84);border:1px solid rgba(255,179,71,.25);color:#fff;font-size:11px;letter-spacing:.1em;padding:5px 14px;border-radius:16px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:110;white-space:nowrap;font-family:var(--font-display);font-weight:600}
 #notif.show{opacity:1}
 #temp-badge{position:absolute;top:42px;left:50%;transform:translateX(-50%);background:rgba(7,7,15,.84);border:1px solid var(--accent-dim);color:var(--accent);font-size:11px;letter-spacing:.12em;padding:4px 12px;border-radius:12px;pointer-events:none;display:none;z-index:30;font-family:var(--font-display);font-weight:600}
 
@@ -706,7 +706,7 @@ th{position:relative}
               <th class="hist-check-col"><input type="checkbox" id="hist-check-all"></th>
               <th data-col="title">Name</th>
               <th data-col="type">Type</th>
-              <th data-col="rawUrl">Link</th>
+              <th data-col="rawUrl">Source</th>
               <th data-col="duration" style="text-align:right">Duration</th>
               <th data-col="playCount" style="text-align:center">Plays</th>
               <th data-col="lastPlayed" class="sort-desc">Last Played</th>
@@ -1116,9 +1116,20 @@ function renderHistory(){
         cb.checked=!cb.checked;
         histSelected[cb.checked?'add':'delete'](entry.id);
         tr.classList.toggle('hist-sel',cb.checked);
-        updateHistBulkBar(); syncCheckAll(hist); return;
+        updateHistBulkBar();
+        syncCheckAll(hist);
+        return;
       }
-      if(entry.rawUrl){ closeHistoryModal(); handleUrl(entry.rawUrl); }
+
+      if(entry.rawUrl){
+        closeHistoryModal();
+        handleUrl(entry.rawUrl);
+        return;
+      }
+
+      if(entry.filePath){
+        queueLocalHistoryEntry(entry);
+      }
     });
 
     histTbody.appendChild(tr);
@@ -1236,6 +1247,33 @@ async function openFileLocation(filePath){
     await window.__TAURI__.invoke('reveal_in_explorer', { path: filePath });
   }catch(e){
     notif('Could not open file location.');
+  }
+}
+
+async function queueLocalHistoryEntry(entry){
+  if(!window.__TAURI__){ notif('This feature requires the Tauri app'); return; }
+  try{
+    const exists = await window.__TAURI__.invoke('file_exists', { path: entry.filePath });
+    if(!exists){ notif('File not found. It may have been moved or deleted.'); return; }
+
+    const wasEmpty = playlist.length===0;
+    const src = window.__TAURI__.tauri.convertFileSrc(entry.filePath);
+
+    playlist.push({
+      title: entry.title,
+      url: src,
+      dur: entry.duration>0 ? entry.duration : -1,
+      subtitles: [],
+      resumeKey: entry.key || ('l'+hashKey(entry.filePath)),
+      filePath: entry.filePath
+    });
+
+    renderPlaylist();
+    closeHistoryModal();
+    if(wasEmpty) playIndex(0);
+    else notif('Added to queue');
+  }catch(e){
+    notif('Could not load local file.');
   }
 }
 
