@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>html,body{background:#07070f;margin:0}</style>
 <title>VECTO — Media Player</title>
 <link rel="icon" type="image/x-icon" href="https://i.ibb.co/YBp2zwPf/favicon.png">
 
@@ -400,6 +401,18 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 th{position:relative}
 .col-resizer{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:3;background:transparent;user-select:none}
 .col-resizer:hover,.col-resizer.dragging{background:rgba(255,179,71,.35)}
+
+.hist-filepath{
+  font-size:10.5px;color:var(--muted);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;display:block;
+}
+.hist-filepath-clickable{
+  cursor:pointer;transition:color .12s;
+}
+.hist-filepath-clickable:hover{color:var(--accent)}
+.hist-filepath-clickable::before{
+  content:'📂 ';font-size:9px;opacity:.5;
+}
 
 </style>
 </head>
@@ -1003,11 +1016,12 @@ function saveToHistory(item){
   const now=Date.now();
   const ex=hist.find(h=>h.key===key);
   if(ex){
-    ex.lastPlayed=now; ex.playCount=(ex.playCount||1)+1; ex.title=item.title;
-    if(item.dur>0&&ex.duration<=0) ex.duration=item.dur;
-  } else {
-    hist.push({id:now+'_'+Math.random().toString(36).slice(2),key,title:item.title,rawUrl,type,duration:item.dur>0?item.dur:-1,lastPlayed:now,playCount:1});
-  }
+      ex.lastPlayed=now; ex.playCount=(ex.playCount||1)+1; ex.title=item.title;
+      if(item.dur>0&&ex.duration<=0) ex.duration=item.dur;
+      if(item.filePath&&!ex.filePath) ex.filePath=item.filePath;
+    } else {
+      hist.push({id:now+'_'+Math.random().toString(36).slice(2),key,title:item.title,rawUrl,type,duration:item.dur>0?item.dur:-1,lastPlayed:now,playCount:1,filePath:item.filePath||null});
+    }
   const cutoff=now-HIST_DAYS*86400000;
   saveHistRaw(hist.filter(h=>h.lastPlayed>=cutoff).slice(-HIST_MAX));
 }
@@ -1073,6 +1087,16 @@ function renderHistory(){
       const a=document.createElement('a'); a.className='hl'; a.href='#'; a.title=entry.rawUrl; a.textContent=entry.rawUrl;
       a.addEventListener('click',ev=>{ev.stopPropagation();ev.preventDefault();});
       ltd.appendChild(a);
+    } else if(entry.filePath){
+      const span=document.createElement('span');
+      span.className='hist-filepath'+(window.__TAURI__?' hist-filepath-clickable':'');
+      span.textContent=entry.filePath;
+      span.title=window.__TAURI__?'Ctrl+click to reveal in Explorer':entry.filePath;
+      span.addEventListener('click',ev=>{
+        ev.stopPropagation();
+        if((ev.ctrlKey||ev.metaKey)&&window.__TAURI__) openFileLocation(entry.filePath);
+      });
+      ltd.appendChild(span);
     } else {
       const em=document.createElement('em'); em.textContent='local file'; ltd.appendChild(em);
     }
@@ -1201,6 +1225,18 @@ function hideAlbumArt(){
   clearTimeout(_hideArtTimer);
   albumArtWrap.classList.remove('visible');
   _hideArtTimer = setTimeout(()=>{ albumArtImg.src=''; albumArtBlur.style.backgroundImage=''; }, 700);
+}
+
+// ── File location reveal (Tauri only) ─────────────────────────────────────────
+async function openFileLocation(filePath){
+  if(!window.__TAURI__){ notif('Open file location requires the Tauri app'); return; }
+  try{
+    const exists = await window.__TAURI__.invoke('file_exists', { path: filePath });
+    if(!exists){ notif('File not found. It may have been moved or deleted.'); return; }
+    await window.__TAURI__.invoke('reveal_in_explorer', { path: filePath });
+  }catch(e){
+    notif('Could not open file location.');
+  }
 }
 
 function resetPlayerUI(){
@@ -2093,7 +2129,7 @@ if(vid.length){
   }
   const items=[];
   for(const f of vid){
-    const item={title:f.name,url:URL.createObjectURL(f),dur:-1,subtitles:[],resumeKey:'l'+hashKey(f.name+':'+f.size),audioMeta:null};
+    const item={title:f.name,url:URL.createObjectURL(f),dur:-1,subtitles:[],resumeKey:'l'+hashKey(f.name+':'+f.size),audioMeta:null,filePath:(window.__TAURI__&&f.path?f.path:null)};
     if(isAudioFile(f)){
       item.audioMeta = await readAudioMeta(f);
       // Use metadata title as display name if available
@@ -2619,6 +2655,7 @@ document.addEventListener('keyup',e=>{
 });
 
 video.addEventListener('dblclick',toggleFS);
+video.addEventListener('contextmenu', e=>e.preventDefault());
 loadSubSettings();  
 syncUI();           
 fsQBtn.style.display='none';  
