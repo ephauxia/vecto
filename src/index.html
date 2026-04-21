@@ -5,33 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VECTO — Media Player</title>
 <link rel="icon" type="image/x-icon" href="https://i.ibb.co/YBp2zwPf/favicon.png">
-<style>
-@font-face{font-family:'DM Mono';font-weight:300;font-style:normal;src:url('fonts/DMMono-Light.ttf')}
-@font-face{font-family:'DM Mono';font-weight:400;font-style:normal;src:url('fonts/DMMono-Regular.ttf')}
-@font-face{font-family:'DM Mono';font-weight:500;font-style:normal;src:url('fonts/DMMono-Medium.ttf')}
-@font-face{font-family:'DM Mono';font-weight:300;font-style:italic;src:url('fonts/DMMono-LightItalic.ttf')}
-@font-face{font-family:'Syne';font-weight:400;font-style:normal;src:url('fonts/Syne-Regular.ttf')}
-@font-face{font-family:'Syne';font-weight:600;font-style:normal;src:url('fonts/Syne-SemiBold.ttf')}
-@font-face{font-family:'Syne';font-weight:700;font-style:normal;src:url('fonts/Syne-Bold.ttf')}
-@font-face{font-family:'Roboto';font-weight:400;font-style:normal;src:url('fonts/Roboto-Regular.ttf')}
-@font-face{font-family:'Roboto';font-weight:700;font-style:normal;src:url('fonts/Roboto-Bold.ttf')}
-</style>
 
-<script>
-// In packaged Tauri app, fonts are accessed via the asset protocol.
-// In browser dev mode, relative paths work as-is.
-if(window.__TAURI__){
-  document.querySelectorAll('style').forEach(s=>{
-    s.textContent=s.textContent.replace(
-      /url\('fonts\//g,
-      "url('https://asset.localhost/fonts/"
-    );
-  });
-}
-</script>
+/* FONTS */
+<style>
+  /* syne-regular - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Syne';
+    font-style: normal;
+    font-weight: 400;
+    src: url('fonts/syne-v24-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* syne-600 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Syne';
+    font-style: normal;
+    font-weight: 600;
+    src: url('fonts/syne-v24-latin-600.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* syne-700 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Syne';
+    font-style: normal;
+    font-weight: 700;
+    src: url('fonts/syne-v24-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* dm-mono-300 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'DM Mono';
+    font-style: normal;
+    font-weight: 300;
+    src: url('fonts/dm-mono-v16-latin-300.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* dm-mono-300italic - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'DM Mono';
+    font-style: italic;
+    font-weight: 300;
+    src: url('fonts/dm-mono-v16-latin-300italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* dm-mono-regular - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'DM Mono';
+    font-style: normal;
+    font-weight: 400;
+    src: url('fonts/dm-mono-v16-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* dm-mono-500 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'DM Mono';
+    font-style: normal;
+    font-weight: 500;
+    src: url('fonts/dm-mono-v16-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* roboto-regular - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    src: url('fonts/roboto-v51-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* roboto-700 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 700;
+    src: url('fonts/roboto-v51-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.7.4/dash.all.min.js"></script>
+<script src="https://unpkg.com/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
 <style id="dynamic-sub-styles"></style>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -196,7 +249,25 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .pl-empty{padding:20px 14px;color:var(--border);font-size:11px;text-align:center}
 
 /* RESUME BAR */
-#resume-bar{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(7,7,15,.92);border:1px solid var(--border);border-radius:6px;padding:7px 12px;display:flex;align-items:center;gap:10px;z-index:36;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+#resume-bar {
+  position: absolute;
+  /* Replaced top/left/transform with bottom/left */
+  bottom: 80px; 
+  left: 14px; /* Matches the 14px padding of your #controls container */
+  
+  background: rgba(7,7,15,.92);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 36;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+  white-space: nowrap;
+}
 #resume-bar.show{opacity:1;pointer-events:auto}
 #resume-msg{font-size:11.5px;color:var(--text);font-family:var(--font-mono)}
 #resume-yes{background:var(--accent);color:var(--bg);border-radius:3px;padding:3px 10px;font-family:var(--font-display);font-weight:600;font-size:10px;letter-spacing:.06em;min-width:86px;text-align:center;transition:background .12s}
@@ -258,6 +329,79 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 #buf-spinner.visible{display:block}
 @keyframes vecto-spin{to{transform:rotate(360deg)}}
 
+/* ── PLAYBACK HISTORY ─────────────────────────────────────────────────────── */
+#history-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#history-overlay.open{opacity:1;pointer-events:auto}
+#history-modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:min(920px,92vw);max-height:76vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.85);transform:scale(.97);transition:transform .2s;overflow:hidden}
+#history-overlay.open #history-modal{transform:scale(1)}
+#history-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 9px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hist-head-title{font-family:var(--font-display);font-weight:700;font-size:12px;letter-spacing:.18em;color:var(--accent)}
+.hist-head-btns{display:flex;align-items:center;gap:8px}
+.hist-hbtn{font-family:var(--font-display);font-weight:600;font-size:10px;letter-spacing:.08em;padding:3px 9px;border:1px solid var(--border);border-radius:3px;color:var(--muted);transition:all .15s}
+.hist-hbtn:hover{color:var(--text);border-color:var(--muted)}
+.hist-hbtn.active{color:var(--accent);border-color:var(--accent-dim)}
+.hist-close{color:var(--muted);font-size:13px;padding:2px 6px;font-family:var(--font-display);font-weight:600;transition:color .1s}
+.hist-close:hover{color:var(--text)}
+#history-filters{display:flex;align-items:center;gap:6px;padding:7px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hist-filter-label{font-size:9px;color:var(--muted);letter-spacing:.12em;font-family:var(--font-display);margin-right:2px}
+.hist-filter{font-family:var(--font-display);font-weight:600;font-size:9.5px;letter-spacing:.07em;padding:2px 10px;border:1px solid var(--border);border-radius:12px;color:var(--muted);transition:all .15s}
+.hist-filter:hover{color:var(--text);border-color:var(--muted)}
+.hist-filter.on{background:rgba(255,179,71,.1);color:var(--accent);border-color:var(--accent-dim)}
+#history-table-wrap{flex:1;overflow:auto;min-height:0}
+#history-table{border-collapse:collapse;font-size:11.5px;min-width:100%}
+#history-table thead{position:sticky;top:0;z-index:2;background:var(--surface2)}
+#history-table th{padding:7px 12px;text-align:left;font-family:var(--font-display);font-size:9px;letter-spacing:.13em;color:var(--muted);font-weight:700;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);transition:color .12s}
+#history-table th:hover{color:var(--text)}
+#history-table th.sort-asc::after{content:' ↑';color:var(--accent)}
+#history-table th.sort-desc::after{content:' ↓';color:var(--accent)}
+#history-table td{padding:7px 12px;border-bottom:1px solid rgba(28,28,53,.6);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#history-table tbody tr{cursor:pointer;transition:background .1s}
+#history-table tbody tr:hover{background:rgba(255,179,71,.04)}
+#history-table tbody tr.hist-sel{background:rgba(255,179,71,.09)}
+.hist-check-col{width:32px}
+.hist-td-name{color:var(--text)}
+.hist-td-type{font-size:9.5px;font-family:var(--font-display);font-weight:700;letter-spacing:.07em}
+.ht-local{color:#4caf7d}.ht-hls,.ht-m3u{color:#5bc8f5}.ht-dash{color:#c97aff}.ht-stream{color:var(--muted)}
+.hist-td-link{color:var(--muted);font-size:10.5px}
+.hist-td-link .hl{color:inherit;text-decoration:none}
+.hist-td-link .hl:hover{color:var(--accent)}
+.hist-td-link em{font-style:italic;opacity:.55}
+.hist-td-num{color:var(--muted);font-size:11px;text-align:right}
+.hist-td-plays{text-align:center;color:var(--muted);font-size:11px}
+.hist-td-date{color:var(--muted);font-size:10.5px;white-space:nowrap}
+.hist-empty{text-align:center;padding:40px;color:var(--border);font-size:12px}
+#history-bulk{display:none;align-items:center;justify-content:space-between;padding:7px 16px;background:rgba(255,179,71,.06);border-top:1px solid rgba(255,179,71,.14);flex-shrink:0}
+#hist-bulk-count{font-family:var(--font-display);font-size:10px;letter-spacing:.08em;color:var(--accent)}
+#hist-remove-sel{font-family:var(--font-display);font-weight:600;font-size:10px;letter-spacing:.06em;padding:3px 10px;border:1px solid var(--border);border-radius:3px;color:var(--muted);transition:all .12s}
+#hist-remove-sel:hover{color:var(--text);border-color:var(--muted)}
+#hist-add-queue{font-family:var(--font-display);font-weight:600;font-size:10px;letter-spacing:.06em;padding:3px 10px;border:1px solid var(--border);border-radius:3px;color:var(--muted);transition:all .12s}
+#hist-add-queue:hover{color:var(--text);border-color:var(--muted)}
+#history-table:not(.select-mode) .hist-check-col{width:0;max-width:0;padding:0;overflow:hidden;border:none;pointer-events:none}
+#history-table.select-mode .hist-check-col{width:32px;padding:7px 12px}
+#history-table:not(.select-mode) col.col-check{width:0!important}
+
+/* ── ALBUM ART ────────────────────────────────────────────────────────────── */
+#album-art-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .7s ease;pointer-events:none;z-index:6}
+#album-art-wrap.visible{opacity:1}
+#album-art-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(32px) brightness(.28);transform:scale(1.12)}
+#album-art-img{width:188px;height:188px;object-fit:cover;border-radius:6px;position:relative;z-index:1;box-shadow:0 10px 40px rgba(0,0,0,.8)}
+#audio-meta-overlay{position:relative;z-index:1;text-align:center;margin-top:14px;padding:0 20px;max-width:300px}
+#audio-track-title{font-family:var(--font-display);font-weight:700;font-size:15px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.9);overflow:hidden;white-space:nowrap;position:relative;text-align:center}
+#audio-track-artist{font-size:11px;color:rgba(255,255,255,.5);margin-top:5px;text-shadow:0 1px 4px rgba(0,0,0,.9);overflow:hidden;white-space:nowrap;position:relative;text-align:center}
+#audio-track-title.mq-active,#audio-track-artist.mq-active{text-align:left;-webkit-mask-image:linear-gradient(to right,transparent 0%,#000 10%,#000 88%,transparent 100%);mask-image:linear-gradient(to right,transparent 0%,#000 10%,#000 88%,transparent 100%)}
+.mq-inner{display:inline-block;white-space:nowrap}
+.mq-inner.mq-on{animation:vecto-mq var(--mq-dur,12s) ease-in-out infinite alternate}
+@keyframes vecto-mq{0%,20%{transform:translateX(0)}80%,100%{transform:translateX(var(--mq-dist,0px))}}
+
+#hist-pause-btn:not(.paused):hover{color:var(--red)!important;border-color:var(--red)!important}
+#hist-pause-btn.paused{color:var(--green);border-color:var(--green)}
+#hist-pause-btn.paused:hover{color:#6aff9e!important;border-color:#6aff9e!important}
+
+/* Column resizer handle */
+th{position:relative}
+.col-resizer{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:3;background:transparent;user-select:none}
+.col-resizer:hover,.col-resizer.dragging{background:rgba(255,179,71,.35)}
+
 </style>
 </head>
 <body>
@@ -273,6 +417,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
       <button class="btn btn-accent" id="url-add">ADD</button>
       <label id="file-label">+ FILE / M3U<input type="file" id="file-input" multiple accept="video/*,audio/*,.m3u,.m3u8,.mpd,.mkv,.avi,.mov,.wmv,.flv,.ts,.webm"></label>
       <button class="btn" id="queue-btn">QUEUE <span id="queue-count"></span></button>
+      <button class="btn" id="history-btn" style="margin-left:auto" title="Playback History">↺ HISTORY</button>
     </div>
   </div>
 
@@ -288,6 +433,14 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
       <div id="drop-overlay"><span class="drop-label">DROP TO ADD</span></div>
       <div id="notif"></div>
       <div id="temp-badge">HOLD — 2×</div>
+      <div id="album-art-wrap">
+      <div id="album-art-blur"></div>
+      <img id="album-art-img" alt="">
+      <div id="audio-meta-overlay">
+        <div id="audio-track-title"></div>
+        <div id="audio-track-artist"></div>
+      </div>
+    </div>
       <div id="buf-spinner"></div>
       <div id="resume-bar">
         <span id="resume-msg"></span>
@@ -511,9 +664,58 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
     <div class="sc-item"><span class="sc-key">&lt; &gt;</span><span class="sc-label">Speed step</span></div>
     <div class="sc-item"><span class="sc-key">0–9</span><span class="sc-label">Seek %</span></div>
   </div>
+
+    <div id="history-overlay">
+    <div id="history-modal">
+      <div id="history-head">
+        <span class="hist-head-title">PLAYBACK HISTORY</span>
+        <div class="hist-head-btns">
+          <button class="hist-hbtn" id="hist-select-btn">SELECT</button>
+          <button class="hist-hbtn" id="hist-pause-btn">PAUSE HISTORY</button>
+          <button class="hist-hbtn" id="hist-clear-btn">CLEAR ALL</button>
+          <button class="hist-close" id="hist-close-btn">✕</button>
+        </div>
+      </div>
+      <div id="history-filters">
+        <span class="hist-filter-label">FILTER</span>
+        <button class="hist-filter" data-type="local">Local</button>
+        <button class="hist-filter" data-type="hls">M3U / HLS</button>
+        <button class="hist-filter" data-type="dash">DASH</button>
+        <button class="hist-filter" data-type="stream">Other Streams</button>
+      </div>
+      <div id="history-table-wrap">
+        <table id="history-table">
+          <colgroup>
+            <col class="col-check">
+            <col><col><col><col><col><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="hist-check-col"><input type="checkbox" id="hist-check-all"></th>
+              <th data-col="title">Name</th>
+              <th data-col="type">Type</th>
+              <th data-col="rawUrl">Link</th>
+              <th data-col="duration" style="text-align:right">Duration</th>
+              <th data-col="playCount" style="text-align:center">Plays</th>
+              <th data-col="lastPlayed" class="sort-desc">Last Played</th>
+            </tr>
+          </thead>
+          <tbody id="hist-tbody"></tbody>
+        </table>
+      </div>
+      <div id="history-bulk">
+        <span id="hist-bulk-count">0 selected</span>
+        <div style="display:flex;gap:8px">
+          <button id="hist-add-queue">ADD TO QUEUE</button>
+          <button id="hist-remove-sel">REMOVE</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+
 (function(){
 'use strict';
 
@@ -597,6 +799,22 @@ const shotBtn       = document.getElementById('shot-btn');
 const bufSpinner    = document.getElementById('buf-spinner');
 const subSaveBtn    = document.getElementById('sub-save-btn');
 const subResetBtn   = document.getElementById('sub-reset-btn');
+const historyBtn    = document.getElementById('history-btn');
+const histPauseBtn  = document.getElementById('hist-pause-btn');
+const histOverlay   = document.getElementById('history-overlay');
+const histCloseBtn  = document.getElementById('hist-close-btn');
+const histSelectBtn = document.getElementById('hist-select-btn');
+const histClearBtn  = document.getElementById('hist-clear-btn');
+const histTbody     = document.getElementById('hist-tbody');
+const histCheckAll  = document.getElementById('hist-check-all');
+const histBulk      = document.getElementById('history-bulk');
+const histBulkCount = document.getElementById('hist-bulk-count');
+const histRemoveSel = document.getElementById('hist-remove-sel');
+const albumArtWrap  = document.getElementById('album-art-wrap');
+const albumArtBlur  = document.getElementById('album-art-blur');
+const albumArtImg   = document.getElementById('album-art-img');
+const audioTrackTitle  = document.getElementById('audio-track-title');
+const audioTrackArtist = document.getElementById('audio-track-artist');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let playlist        =[];
@@ -715,7 +933,9 @@ function captureFrame(){
 shotBtn.addEventListener('click', captureFrame);
 
 // ── Buffering spinner ─────────────────────────────────────────────────────────
-video.addEventListener('waiting',  ()=>bufSpinner.classList.add('visible'));
+video.addEventListener('waiting',()=>{
+  if(currentIdx>=0&&video.src) bufSpinner.classList.add('visible');
+});
 video.addEventListener('playing',  ()=>bufSpinner.classList.remove('visible'));
 video.addEventListener('canplay',  ()=>bufSpinner.classList.remove('visible'));
 video.addEventListener('seeked',   ()=>bufSpinner.classList.remove('visible'));
@@ -741,6 +961,258 @@ function loadSubSettings(){
     const cfg=JSON.parse(localStorage.getItem(SUB_CFG_KEY));
     if(cfg) Object.keys(SUB_DEFAULTS).forEach(k=>{if(cfg[k]!==undefined)subState[k]=cfg[k];});
   }catch(e){}
+}
+
+// ── Playback History ──────────────────────────────────────────────────────────
+const HIST_KEY  = 'vecto_hist';
+const HIST_DAYS = 5;
+const HIST_MAX  = 500;
+
+let histSelecting   = false;
+let histSelected    = new Set();
+let histSortCol     = 'lastPlayed';
+let histSortAsc     = false;
+let histFilters     = new Set();
+let historyPaused   = false;
+let _pendingSeekRatio = null;
+let _colResizeDid     = false;
+let _histMouseDownOnOverlay = false;
+
+function fmtDate(ts){
+  const d=new Date(ts);
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${M[d.getMonth()]} ${d.getDate()} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function histType(url){
+  if(!url||url.startsWith('blob:')) return 'local';
+  if(/\.m3u8($|\?)/i.test(url)) return 'hls';
+  if(/\.mpd($|\?)/i.test(url)) return 'dash';
+  if(/\.m3u($|\?)/i.test(url)) return 'm3u';
+  return 'stream';
+}
+
+function loadHistRaw(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY))||[]; }catch(e){ return []; } }
+function saveHistRaw(h){ try{ localStorage.setItem(HIST_KEY,JSON.stringify(h)); }catch(e){} }
+
+function saveToHistory(item){
+  if(!item||historyPaused) return;
+  const type=histType(item.url);
+  const rawUrl=(type==='local')?null:item.url;
+  const key=item.resumeKey||hashKey(item.title+(rawUrl||''));
+  let hist=loadHistRaw();
+  const now=Date.now();
+  const ex=hist.find(h=>h.key===key);
+  if(ex){
+    ex.lastPlayed=now; ex.playCount=(ex.playCount||1)+1; ex.title=item.title;
+    if(item.dur>0&&ex.duration<=0) ex.duration=item.dur;
+  } else {
+    hist.push({id:now+'_'+Math.random().toString(36).slice(2),key,title:item.title,rawUrl,type,duration:item.dur>0?item.dur:-1,lastPlayed:now,playCount:1});
+  }
+  const cutoff=now-HIST_DAYS*86400000;
+  saveHistRaw(hist.filter(h=>h.lastPlayed>=cutoff).slice(-HIST_MAX));
+}
+
+function getFilteredHistory(){
+  let hist=loadHistRaw();
+  hist.sort((a,b)=>{
+    const va=a[histSortCol]??'', vb=b[histSortCol]??'';
+    if(typeof va==='number') return histSortAsc?va-vb:vb-va;
+    return histSortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+  });
+  if(histFilters.size===0) return hist;
+  return hist.filter(h=>{
+    if(histFilters.has('hls')&&(h.type==='hls'||h.type==='m3u')) return true;
+    if(histFilters.has('local')&&h.type==='local') return true;
+    if(histFilters.has('dash')&&h.type==='dash') return true;
+    if(histFilters.has('stream')&&h.type==='stream') return true;
+    return false;
+  });
+}
+
+const TYPE_LABEL={local:'LOCAL',hls:'HLS',dash:'DASH',m3u:'M3U',stream:'STREAM'};
+const TYPE_CLS={local:'ht-local',hls:'ht-hls',dash:'ht-dash',m3u:'ht-m3u',stream:'ht-stream'};
+
+function renderHistory(){
+  const hist=getFilteredHistory();
+  histTbody.innerHTML='';
+  const tbl=document.getElementById('history-table');
+  if(hist.length===0){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td colspan="7" class="hist-empty">No history${histFilters.size>0?' matching filters':' yet'}</td>`;
+    histTbody.appendChild(tr); updateHistBulkBar(); return;
+  }
+  hist.forEach(entry=>{
+    const tr=document.createElement('tr');
+    tr.dataset.id=entry.id;
+    if(histSelected.has(entry.id)) tr.classList.add('hist-sel');
+
+    // Checkbox cell
+    const cktd=document.createElement('td'); cktd.className='hist-check-col';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=histSelected.has(entry.id);
+    cb.addEventListener('change',ev=>{
+      ev.stopPropagation();
+      histSelected[cb.checked?'add':'delete'](entry.id);
+      tr.classList.toggle('hist-sel',cb.checked);
+      updateHistBulkBar();
+      syncCheckAll(hist);
+    });
+    // Prevent click from bubbling to the tr handler (which would double-toggle)
+    cb.addEventListener('click', ev=>ev.stopPropagation());
+    cktd.addEventListener('click', ev=>ev.stopPropagation());
+    cktd.appendChild(cb); tr.appendChild(cktd);
+
+    // Name
+    const ntd=document.createElement('td'); ntd.className='hist-td-name'; ntd.title=entry.title; ntd.textContent=entry.title; tr.appendChild(ntd);
+
+    // Type
+    const ttd=document.createElement('td'); ttd.className=`hist-td-type ${TYPE_CLS[entry.type]||''}`; ttd.textContent=TYPE_LABEL[entry.type]||entry.type.toUpperCase(); tr.appendChild(ttd);
+
+    // Link
+    const ltd=document.createElement('td'); ltd.className='hist-td-link';
+    if(entry.rawUrl){
+      const a=document.createElement('a'); a.className='hl'; a.href='#'; a.title=entry.rawUrl; a.textContent=entry.rawUrl;
+      a.addEventListener('click',ev=>{ev.stopPropagation();ev.preventDefault();});
+      ltd.appendChild(a);
+    } else {
+      const em=document.createElement('em'); em.textContent='local file'; ltd.appendChild(em);
+    }
+    tr.appendChild(ltd);
+
+    // Duration
+    const dtd=document.createElement('td'); dtd.className='hist-td-num'; dtd.textContent=entry.duration>0?fmt(entry.duration):'—'; tr.appendChild(dtd);
+
+    // Plays
+    const ptd=document.createElement('td'); ptd.className='hist-td-plays'; ptd.textContent=entry.playCount||1; tr.appendChild(ptd);
+
+    // Last Played
+    const ld=document.createElement('td'); ld.className='hist-td-date'; ld.title=new Date(entry.lastPlayed).toLocaleString(); ld.textContent=fmtDate(entry.lastPlayed); tr.appendChild(ld);
+
+    tr.addEventListener('click',()=>{
+      if(histSelecting){
+        cb.checked=!cb.checked;
+        histSelected[cb.checked?'add':'delete'](entry.id);
+        tr.classList.toggle('hist-sel',cb.checked);
+        updateHistBulkBar(); syncCheckAll(hist); return;
+      }
+      if(entry.rawUrl){ closeHistoryModal(); handleUrl(entry.rawUrl); }
+    });
+
+    histTbody.appendChild(tr);
+  });
+  syncCheckAll(hist);
+  updateHistBulkBar();
+}
+
+function syncCheckAll(hist){
+  if(histCheckAll) histCheckAll.checked=hist.length>0&&hist.every(h=>histSelected.has(h.id));
+}
+
+function updateHistBulkBar(){
+  const show=histSelecting&&histSelected.size>0;
+  histBulk.style.display=show?'flex':'none';
+  if(show) histBulkCount.textContent=histSelected.size+' selected';
+}
+
+function openHistoryModal(){
+  histSelecting=false; histSelected.clear();
+  histSelectBtn.textContent='SELECT'; histSelectBtn.classList.remove('active');
+  histBulk.style.display='none';
+  document.getElementById('history-table').classList.remove('select-mode');
+  renderHistory();
+  histOverlay.classList.add('open');
+  // Init after open so th offsetWidths are measurable
+  requestAnimationFrame(initResizableColumns);
+}
+
+function closeHistoryModal(){ histOverlay.classList.remove('open'); }
+
+// ── Audio Metadata ────────────────────────────────────────────────────────────
+function isAudioFile(f){
+  return /^audio\//i.test(f.type)||/\.(mp3|flac|aac|ogg|wav|m4a|opus|wma|ape)$/i.test(f.name);
+}
+
+function readAudioMeta(file){
+  return new Promise(resolve=>{
+    if(!window.jsmediatags){ resolve(null); return; }
+    jsmediatags.read(file,{
+      onSuccess(tag){
+        const t=tag.tags;
+        const result={art:null,artist:t.artist||null,album:t.album||null,title:t.title||null};
+        if(t.picture){
+          try{
+            const b64=btoa(t.picture.data.reduce((s,b)=>s+String.fromCharCode(b),''));
+            result.art=`data:${t.picture.format};base64,${b64}`;
+          }catch(e){}
+        }
+        resolve(result);
+      },
+      onError(){ resolve(null); }
+    });
+  });
+}
+
+let _hideArtTimer = null;
+
+function setMarquee(el, text){
+  el.innerHTML='';
+  el.classList.remove('mq-active');
+  const inner = document.createElement('span');
+  inner.className = 'mq-inner';
+  inner.textContent = text;
+  el.appendChild(inner);
+  
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    // Measure true overflow before any padding is applied
+    const rawOverflow = inner.scrollWidth - el.offsetWidth;
+    
+    if(rawOverflow > 4){
+      // Text is too long, activate marquee mask
+      el.classList.add('mq-active');
+      
+      // Add symmetrical padding to clear the fade masks on BOTH ends
+      inner.style.paddingLeft = '40px';
+      inner.style.paddingRight = '40px';
+      
+      // Calculate total translation distance (original overflow + 80px total padding)
+      const totalDist = rawOverflow + 80;
+      
+      inner.style.setProperty('--mq-dist', `-${totalDist}px`);
+      // Adjust duration based on the new total distance so speed feels consistent
+      inner.style.setProperty('--mq-dur', `${Math.max(8, totalDist / 25)}s`);
+      inner.classList.add('mq-on');
+    }
+  }));
+}
+
+function showAlbumArt(item){
+  clearTimeout(_hideArtTimer); // Cancel any pending hide timer first
+  if(!item?.audioMeta?.art){ hideAlbumArt(); return; }
+  const{art,artist,album}=item.audioMeta;
+  albumArtBlur.style.backgroundImage=`url('${art}')`;
+  albumArtImg.src=art;
+  const displayTitle = (item.audioMeta?.title || item.title || '').replace(/\.[^/.]+$/,'');
+  const displaySub   = [artist, album].filter(Boolean).join(' — ');
+  setMarquee(audioTrackTitle, displayTitle);
+  setMarquee(audioTrackArtist, displaySub || '');
+  albumArtWrap.classList.add('visible');
+}
+
+function hideAlbumArt(){
+  clearTimeout(_hideArtTimer);
+  albumArtWrap.classList.remove('visible');
+  _hideArtTimer = setTimeout(()=>{ albumArtImg.src=''; albumArtBlur.style.backgroundImage=''; }, 700);
+}
+
+function resetPlayerUI(){
+  progFill.style.width='0%';
+  progDot.style.left='0%';
+  bufFill.style.width='0%';
+  timeEl.textContent='0:00 / 0:00';
+  bufSpinner.classList.remove('visible');
+  playBtn.innerHTML='&#9654;';
+  hideAlbumArt();
+  hideResumeBar();
 }
 
 // Panel management
@@ -852,15 +1324,17 @@ function convertSubsToVtt(text, filename) {
 
   // SRT
   if (text.match(/^\d+\r?\n\d{2}:\d{2}:\d{2}/m)) {
-    return 'WEBVTT\n\n' + text.replace(/\r\n|\r|\n/g, '\n').replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+    return 'WEBVTT\n\n' + text
+      .replace(/\r\n|\r|\n/g, '\n')
+      .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
   }
 
   // ASS / SSA rudimentary text extraction
   if (text.includes('[Events]')) {
     let vtt = 'WEBVTT\n\n';
     const lines = text.split('\n');
-    // Dynamically find the Text column index from the Format: declaration
-    let textIdx = 9; // ASS spec default
+
+    let textIdx = 9;
     const eventsStart = lines.findIndex(l => l.trim() === '[Events]');
     if (eventsStart !== -1) {
       const fmtLine = lines.slice(eventsStart).find(l => l.startsWith('Format:'));
@@ -870,28 +1344,42 @@ function convertSubsToVtt(text, filename) {
         if (idx !== -1) textIdx = idx;
       }
     }
+
     for (let line of lines) {
       if (line.startsWith('Dialogue:')) {
         const parts = line.substring(9).trim().split(',');
         const textPart = parts.slice(textIdx).join(',');
-        const start = parts[1].trim(); 
+
+        if (textPart.includes('{\\p1}') || textPart.match(/\{\\[pP][1-9]\}/)) continue;
+
+        const start = parts[1].trim();
         const end = parts[2].trim();
-        
+
         const fixTime = (t) => {
-          let[hms, cs] = t.split('.');
+          let [hms, cs] = t.split('.');
           if (!cs) cs = '00';
           cs = (cs + '0').substring(0, 3);
-          let [h,m,s] = hms.split(':');
+          let [h, m, s] = hms.split(':');
           h = h.padStart(2, '0');
           return `${h}:${m}:${s}.${cs}`;
         };
-        
-        const cleanText = textPart.replace(/\{[^}]+\}/g, '').replace(/\\N/g, '\n').replace(/\\n/g, '\n');
-        vtt += `${fixTime(start)} --> ${fixTime(end)}\n${cleanText}\n\n`;
+
+        const cleanText = textPart
+          .replace(/\{[^}]+\}/g, '')
+          .replace(/\\[Nn]/g, '\n')
+          .replace(/\\h/g, ' ')
+          .trim();
+
+        if (cleanText) {
+          vtt += `${fixTime(start)} --> ${fixTime(end)}\n${cleanText}\n\n`;
+        }
       }
     }
+
     return vtt;
   }
+
+  // fallback (in case format not recognized)
   return 'WEBVTT\n\n' + text;
 }
 
@@ -1260,14 +1748,25 @@ function hideResumeBar(){
 }
 
 video.addEventListener('loadedmetadata',()=>{
-  // Back-fill duration for any item that was added without one (local files, streams)
-  if(currentIdx >= 0 && isFinite(video.duration) && video.duration > 0) {
-    const cur = playlist[currentIdx];
-    if(!cur.dur || cur.dur <= 0) {
-      cur.dur = Math.floor(video.duration);
-      renderPlaylist(); // refresh sidebar timestamp
+  if(currentIdx<0) return; // Ghost guard
+  if(isFinite(video.duration)&&video.duration>0){
+    const cur=playlist[currentIdx];
+    if(!cur.dur||cur.dur<=0){
+      cur.dur=Math.floor(video.duration);
+      renderPlaylist();
+      const histKey=cur.resumeKey||hashKey(cur.title+(cur.url.startsWith('blob:')?'':cur.url));
+      const h=loadHistRaw();
+      const entry=h.find(e=>e.key===histKey);
+      if(entry&&entry.duration<=0){ entry.duration=cur.dur; saveHistRaw(h); }
     }
   }
+  const isAudioOnly = video.videoWidth===0&&video.videoHeight===0;
+  if(isAudioOnly){
+    showAlbumArt(playlist[currentIdx]);
+    _resumeItem=null; // Never show resume bar for audio files
+    return;
+  }
+  hideAlbumArt();
   if(!_resumeItem) return;
   const item=_resumeItem; _resumeItem=null;
   const saved=getSaved(item);
@@ -1362,7 +1861,9 @@ function loadItemSubtitles(item) {
 function playIndex(idx){
   if(idx<0||idx>=playlist.length) return;
   hideResumeBar();
+  hideAlbumArt();
   currentIdx=idx; renderPlaylist();
+  saveToHistory(playlist[idx]);
   const item=playlist[idx];
   _resumeItem=item;
   loadItemSubtitles(item);
@@ -1389,10 +1890,16 @@ function removeFromQueue(idx){
   selectedIndices=newSel;
   const removed = playlist.splice(idx, 1)[0];
   revokeItemSubs(removed);
+  
+  // -- NEW MEMORY CLEANUP --
+  if(removed.url && removed.url.startsWith('blob:')) URL.revokeObjectURL(removed.url);
+  if(removed.audioMeta?.art?.startsWith('blob:')) URL.revokeObjectURL(removed.audioMeta.art);
+  
   if(currentIdx===idx){
     if(playlist.length===0){
       currentIdx=-1; destroyEngines(); video.src='';
       Array.from(video.querySelectorAll('track')).forEach(t=>t.remove());
+      resetPlayerUI();
       emptyState.style.opacity='1'; emptyState.style.pointerEvents='';
     } else {
       const next=Math.min(idx,playlist.length-1);
@@ -1405,7 +1912,13 @@ function removeFromQueue(idx){
 function removeSelected(){
   const toRemove=[...selectedIndices].sort((a,b)=>b-a);
   toRemove.forEach(idx=>{
-    revokeItemSubs(playlist[idx]);
+    const item = playlist[idx];
+    revokeItemSubs(item);
+    
+    // -- NEW MEMORY CLEANUP --
+    if(item.url && item.url.startsWith('blob:')) URL.revokeObjectURL(item.url);
+    if(item.audioMeta?.art?.startsWith('blob:')) URL.revokeObjectURL(item.audioMeta.art);
+    
     if(idx===currentIdx){
       destroyEngines(); video.src='';
       Array.from(video.querySelectorAll('track')).forEach(t=>t.remove());
@@ -1415,6 +1928,7 @@ function removeSelected(){
   if(toRemove.includes(currentIdx)){
     if(playlist.length===0){
       currentIdx=-1;
+      resetPlayerUI();
       emptyState.style.opacity='1'; emptyState.style.pointerEvents='';
     } else {
       const fallback=Math.min(toRemove[toRemove.length-1],playlist.length-1);
@@ -1570,8 +2084,33 @@ async function handleFileList(files){
     else vid.push(f);
   }
   for(const f of m3u){const t=await f.text();addItems(parseM3U(t));}
-  if(vid.length)addItems(vid.map(f=>({title:f.name,url:URL.createObjectURL(f),dur:-1,subtitles:[],resumeKey:'l'+hashKey(f.name+':'+f.size)})));
-  
+if(vid.length){
+  // Detect a cover art image in the same dropped batch (cover.jpg, album.png, folder.jpg, etc.)
+  let batchCoverFile = null;
+  for(const f of files){
+    if(/^(cover|album|folder|art|front|back)\./i.test(f.name)&&/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(f.name)){
+      batchCoverFile = f; break;
+    }
+  }
+  const items=[];
+  for(const f of vid){
+    const item={title:f.name,url:URL.createObjectURL(f),dur:-1,subtitles:[],resumeKey:'l'+hashKey(f.name+':'+f.size),audioMeta:null};
+    if(isAudioFile(f)){
+      item.audioMeta = await readAudioMeta(f);
+      // Use metadata title as display name if available
+      if(item.audioMeta?.title) item.title = item.audioMeta.title;
+      // Fall back to batch cover art if no embedded art
+      if(item.audioMeta && !item.audioMeta.art && batchCoverFile){
+        item.audioMeta.art = URL.createObjectURL(batchCoverFile);
+      } else if(!item.audioMeta && batchCoverFile){
+        item.audioMeta = {art:URL.createObjectURL(batchCoverFile), artist:null, album:null, title:null};
+      }
+    }
+    items.push(item);
+  }
+  addItems(items);
+}
+
   if(subs.length){
     try {
       const vttText = convertSubsToVtt(await subs[0].text(), subs[0].name);
@@ -1597,9 +2136,14 @@ async function handleUrl(raw){
 }
 
 // ── Video events ──────────────────────────────────────────────────────────────
-video.addEventListener('play',()=>{playBtn.innerHTML='&#9646;&#9646;';renderPlaylist();});
+video.addEventListener('play',()=>{
+  if(currentIdx<0||!video.src){video.pause();return;}
+  playBtn.innerHTML='&#9646;&#9646;';
+  renderPlaylist();
+});
 video.addEventListener('pause',()=>{playBtn.innerHTML='&#9654;';renderPlaylist();});
 video.addEventListener('timeupdate',()=>{
+  if(currentIdx<0) return;
   const d=video.duration; if(!isFinite(d)) return;
   const pct=(video.currentTime/d*100).toFixed(2);
   progFill.style.width=pct+'%'; progDot.style.left=pct+'%';
@@ -1630,7 +2174,21 @@ video.addEventListener('pause',()=>controlsEl.classList.add('visible'));
 video.addEventListener('play',()=>{clearTimeout(ctrlTimer);ctrlTimer=setTimeout(()=>controlsEl.classList.remove('visible'),2800);});
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
-function seekToRatio(r){if(!isFinite(video.duration))return;video.currentTime=Math.max(0,Math.min(1,r))*video.duration;}
+function seekToRatio(r){
+  if(!isFinite(video.duration)){
+    _pendingSeekRatio=r; // overwrite — only final position matters
+    video.addEventListener('loadedmetadata',()=>{
+      if(_pendingSeekRatio!==null){
+        video.currentTime=Math.max(0,Math.min(1,_pendingSeekRatio))*video.duration;
+        _pendingSeekRatio=null;
+      }
+    },{once:true});
+    return;
+  }
+  _pendingSeekRatio=null;
+  video.currentTime=Math.max(0,Math.min(1,r))*video.duration;
+}
+
 function ratioFromEvent(e){const rect=progressWrap.getBoundingClientRect();return(e.clientX-rect.left)/rect.width;}
 progressWrap.addEventListener('mousedown',e=>{isDraggingProg=true;seekToRatio(ratioFromEvent(e));});
 document.addEventListener('mousemove',e=>{if(isDraggingProg)seekToRatio(ratioFromEvent(e));});
@@ -1670,6 +2228,237 @@ volSlider.addEventListener('input',()=>{video.volume=parseFloat(volSlider.value)
 speedBtn.addEventListener('click',e=>{closeAllPanels();speedMenu.classList.toggle('open');e.stopPropagation();});
 document.querySelectorAll('.speed-opt').forEach(o=>o.addEventListener('click',()=>{video.playbackRate=parseFloat(o.dataset.rate);speedMenu.classList.remove('open');}));
 gearBtn.addEventListener('click',e=>{toggleSettings();e.stopPropagation();});
+historyBtn.addEventListener('click', openHistoryModal);
+histCloseBtn.addEventListener('click', closeHistoryModal);
+// Only close if the click STARTED on the overlay too — prevents close when
+// dragging out of the modal (e.g. column resize, text drag) and releasing outside
+histOverlay.addEventListener('mousedown', e=>{
+  _histMouseDownOnOverlay = (e.target === histOverlay);
+});
+histOverlay.addEventListener('click', e=>{
+  if(e.target===histOverlay && _histMouseDownOnOverlay) closeHistoryModal();
+  _histMouseDownOnOverlay = false;
+});
+
+histSelectBtn.addEventListener('click',()=>{
+  histSelecting=!histSelecting;
+  histSelectBtn.textContent=histSelecting?'CANCEL':'SELECT';
+  histSelectBtn.classList.toggle('active',histSelecting);
+  document.getElementById('history-table').classList.toggle('select-mode',histSelecting);
+  if(!histSelecting){ histSelected.clear(); histBulk.style.display='none'; }
+  renderHistory();
+  requestAnimationFrame(initResizableColumns); // columns changed visibility
+});
+
+histClearBtn.addEventListener('click',()=>{
+  if(!confirm('Clear all playback history?')) return;
+  saveHistRaw([]); histSelected.clear(); renderHistory();
+});
+
+histRemoveSel.addEventListener('click',()=>{
+  let hist=loadHistRaw();
+  hist=hist.filter(h=>!histSelected.has(h.id));
+  saveHistRaw(hist); histSelected.clear();
+  if(hist.length===0){ histSelecting=false; histSelectBtn.textContent='SELECT'; histSelectBtn.classList.remove('active'); document.getElementById('history-table').classList.remove('select-mode'); }
+  renderHistory();
+});
+
+const histAddQueue = document.getElementById('hist-add-queue');
+histAddQueue.addEventListener('click',()=>{
+  const hist = loadHistRaw();
+  // histSelected is a Set — JS Sets preserve insertion order, so this is selection order
+  const toAdd = [...histSelected]
+    .map(id=>hist.find(h=>h.id===id))
+    .filter(e=>e&&e.rawUrl); // local files can't be re-added (no persistent path)
+  if(!toAdd.length){ notif('No network items selected (local files cannot be re-added)'); return; }
+  const wasEmpty = playlist.length===0;
+  toAdd.forEach(entry=>{
+    playlist.push({
+      title:entry.title,
+      url:entry.rawUrl,
+      dur:entry.duration || -1,
+      subtitles:[],
+      resumeKey:'n'+hashKey(entry.rawUrl)
+    });
+  });
+  renderPlaylist();
+  closeHistoryModal();
+  notif(`Added ${toAdd.length} item${toAdd.length>1?'s':''} to queue`);
+  if(wasEmpty) playIndex(0);
+});
+
+// ── Resizable columns ─────────────────────────────────────────────────────────
+function initResizableColumns(){
+  const table  = document.getElementById('history-table');
+  const wrap   = document.getElementById('history-table-wrap');
+  const isSelMode = table.classList.contains('select-mode');
+  
+  // Constants for state management
+  const CHECK_COL_WIDTH = 32;
+  const STORAGE_KEY = 'vecto_hist_col_widths';
+
+  table.querySelectorAll('.col-resizer').forEach(r=>r.remove());
+
+  const ths  = Array.from(table.querySelectorAll('thead th'));
+  const cols = Array.from(table.querySelectorAll('col'));
+
+  // 1. Handle Checkbox Column Fixed Width
+  if(cols[0]) cols[0].style.width = isSelMode ? CHECK_COL_WIDTH + 'px' : '0px';
+
+  // 2. Load stored widths from previous sessions
+  let savedWidths = [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if(stored) savedWidths = JSON.parse(stored);
+  } catch(e) {}
+
+  // Get visible data columns (skip index 0, which is the checkbox)
+  const dataColIndices = ths.map((_,i)=>i).filter(i => i > 0);
+  let widths = [];
+
+  if (savedWidths.length === dataColIndices.length) {
+    // Apply user's saved widths
+    widths = savedWidths;
+  } else {
+    // Measure natural widths with auto layout first
+    table.style.tableLayout = 'auto';
+    table.style.width = '';
+    void table.offsetWidth; // force reflow
+
+    const natural = dataColIndices.map(i => ths[i].offsetWidth);
+    const totalNatural = natural.reduce((a,b)=>a+b,0);
+    const wrapW = wrap.clientWidth;
+
+    // Scale up proportionally if content is narrower than the wrap
+    // Exclude the checkbox width from available wrapper space if active
+    const availableWrap = wrapW - (isSelMode ? CHECK_COL_WIDTH : 0);
+    const scale = totalNatural < availableWrap ? availableWrap / totalNatural : 1;
+    widths = natural.map(w => Math.round(w * scale));
+
+    // Fix rounding drift so widths sum exactly to target
+    const target = Math.max(Math.round(totalNatural * scale), availableWrap);
+    const got = widths.reduce((a,b)=>a+b,0);
+    if(got !== target) widths[widths.length-1] += target - got;
+  }
+
+  // Switch to fixed layout and apply pixel widths
+  table.style.tableLayout = 'fixed';
+  
+  // 3. Start table width at 32px or 0px depending on select mode
+  let tableW = isSelMode ? CHECK_COL_WIDTH : 0; 
+  dataColIndices.forEach((thIdx, arrIdx)=>{
+    if(cols[thIdx]) cols[thIdx].style.width = widths[arrIdx] + 'px';
+    tableW += widths[arrIdx];
+  });
+  table.style.width = tableW + 'px';
+
+  // Per-column resize limits [min, max] in px. Index matches <th> order.
+  const limits = [
+    null,           // 0: checkbox — not resizable
+    [100, 380],     // 1: name
+    [52,  90],      // 2: type
+    [100, 520],     // 3: link
+    [58,  120],     // 4: duration
+    [36,  72],      // 5: plays
+    [110, 220],     // 6: last played
+  ];
+
+  ths.forEach((th, i)=>{
+    if(i === 0) return; // checkbox not resizable
+
+    const resizer = document.createElement('div');
+    resizer.className = 'col-resizer';
+    
+    // 4. Add the visual pipe (|) indicator to the resizer
+    resizer.style.display = 'flex';
+    resizer.style.alignItems = 'center';
+    resizer.style.justifyContent = 'center';
+    resizer.style.color = '#50506a';
+    resizer.style.fontSize = '10px';
+    resizer.innerHTML = '|';
+
+    th.appendChild(resizer);
+
+    resizer.addEventListener('mousedown', e=>{
+      e.preventDefault(); e.stopPropagation();
+      resizer.classList.add('dragging');
+      resizer.style.color = 'var(--accent)'; // Highlight pipe on grab
+
+      const startX    = e.clientX;
+      const col       = cols[i];
+      const startColW = parseInt(col?.style.width) || th.offsetWidth;
+      const [minW, maxW] = limits[i] || [50, 500];
+
+      const onMove = ev=>{
+        _colResizeDid = true;
+        const delta   = ev.clientX - startX;
+        const newW    = Math.max(minW, Math.min(maxW, startColW + delta));
+        const curW    = parseInt(col?.style.width) || th.offsetWidth;
+        const curTblW = parseInt(table.style.width) || table.offsetWidth;
+        const newTblW = curTblW + (newW - curW);
+
+        // Never let table width drop below wrap width (prevents empty space)
+        if(newTblW < wrap.clientWidth) return;
+
+        if(col) col.style.width = newW + 'px';
+        table.style.width = newTblW + 'px';
+      };
+
+      const onUp = ()=>{
+        resizer.classList.remove('dragging');
+        resizer.style.color = '#50506a'; // Reset pipe color
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        
+        // 5. Save the final widths to localStorage
+        const currentWidths = dataColIndices.map(idx => parseInt(cols[idx].style.width) || ths[idx].offsetWidth);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentWidths));
+        } catch(err) {}
+
+        // Delay clearing so the click event skips the sort handler
+        setTimeout(()=>{ _colResizeDid = false; }, 80);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+histCheckAll.addEventListener('change',e=>{
+  getFilteredHistory().forEach(h=>{ histSelected[e.target.checked?'add':'delete'](h.id); });
+  renderHistory();
+});
+
+histPauseBtn.addEventListener('click',()=>{
+  historyPaused=!historyPaused;
+  histPauseBtn.textContent=historyPaused?'RESUME HISTORY':'PAUSE HISTORY';
+  histPauseBtn.classList.toggle('paused',historyPaused);
+  notif(historyPaused?'History paused':'History resumed');
+});
+
+document.querySelectorAll('#history-table th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    // Suppress sort if user just finished a column resize drag
+    if(_colResizeDid) return;
+    const col=th.dataset.col;
+    if(histSortCol===col) histSortAsc=!histSortAsc;
+    else{ histSortCol=col; histSortAsc=(col!=='lastPlayed'); }
+    document.querySelectorAll('#history-table th').forEach(t=>t.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(histSortAsc?'sort-asc':'sort-desc');
+    renderHistory();
+  });
+});
+
+document.querySelectorAll('.hist-filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const t=btn.dataset.type;
+    histFilters[histFilters.has(t)?'delete':'add'](t);
+    btn.classList.toggle('on',histFilters.has(t));
+    renderHistory();
+  });
+});
 
 fsBtn.addEventListener('click',toggleFS);
 function toggleFS(){if(!document.fullscreenElement)playerWrap.requestFullscreen().catch(()=>{});else document.exitFullscreen();}
@@ -1686,18 +2475,25 @@ queueBtn.addEventListener('click',()=>{
   if(opening){playlistPanel.style.width=panelW+'px';}
   else{playlistPanel.style.width='';}
 });
+
 clearBtn.addEventListener('click', () => {
-  playlist.forEach(revokeItemSubs);
-  playlist = []; 
-  currentIdx = -1;
+  playlist.forEach(item => {
+    revokeItemSubs(item);
+    if(item.url&&item.url.startsWith('blob:')) URL.revokeObjectURL(item.url);
+    if(item.audioMeta?.art?.startsWith('blob:')) URL.revokeObjectURL(item.audioMeta.art);
+  });
+  playlist=[];
+  currentIdx=-1;
   selectedIndices.clear();
   renderPlaylist();
-  Array.from(video.querySelectorAll('track')).forEach(t => t.remove());
+  Array.from(video.querySelectorAll('track')).forEach(t=>t.remove());
   destroyEngines();
-  video.src = '';
-  emptyState.style.opacity = '1'; 
-  emptyState.style.pointerEvents = '';
+  video.src='';
+  resetPlayerUI();
+  emptyState.style.opacity='1';
+  emptyState.style.pointerEvents='';
 });
+
 urlAdd.addEventListener('click',()=>{handleUrl(urlInput.value);urlInput.value='';});
 urlInput.addEventListener('keydown',e=>{if(e.key==='Enter'){handleUrl(urlInput.value);urlInput.value='';}});
 fileInput.addEventListener('change',e=>{handleFileList(Array.from(e.target.files));e.target.value='';});
@@ -1714,12 +2510,29 @@ window.addEventListener('drop',e=>{e.preventDefault();handleFileList(Array.from(
 
 // ── Mobile long-press ─────────────────────────────────────────────────────────
 let touchLPTimer=null,touchLPActive=false;
+
+video.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) return; // Ignore pinch/multi-touch
+  clearTimeout(touchLPTimer);
+  touchLPActive = false;
+  touchLPTimer = setTimeout(() => {
+    touchLPActive = true;
+    prevRate = video.playbackRate;
+    isTempSpeed = true;
+    video.playbackRate = 2;
+    tempBadge.style.display = 'block';
+    notif('▶▶  2× Speed', 9999);
+    if (video.paused) video.play();
+  }, 400); // 400ms hold triggers the speedup
+}, {passive: true});
+
 function handleTouchRelease(isCancelled){
   clearTimeout(touchLPTimer);
   if(isTempSpeed){video.playbackRate=prevRate;isTempSpeed=false;tempBadge.style.display='none';notif(prevRate+'× Speed');}
   else if(!isCancelled&&!touchLPActive){video.paused?video.play():video.pause();}
   touchLPActive=false;
 }
+
 video.addEventListener('touchend',  ()=>handleTouchRelease(false),  {passive:true});
 video.addEventListener('touchcancel',()=>handleTouchRelease(true),  {passive:true});
 
@@ -1727,11 +2540,12 @@ video.addEventListener('touchcancel',()=>handleTouchRelease(true),  {passive:tru
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
 
-  if(e.key==='Escape'){
-    if(speedDialog.classList.contains('open')){closeSpeedDialog();e.preventDefault();}
-    else if(settingsPanel.classList.contains('open')){closeSettings();e.preventDefault();}
-    return;
-  }
+if(e.key==='Escape'){
+  if(histOverlay.classList.contains('open')){closeHistoryModal();e.preventDefault();return;}
+  if(speedDialog.classList.contains('open')){closeSpeedDialog();e.preventDefault();}
+  else if(settingsPanel.classList.contains('open')){closeSettings();e.preventDefault();}
+  return;
+}
 
   if(e.code==='Space'&&!e.repeat){
     e.preventDefault(); spaceDown=true; lpActivated=false;
