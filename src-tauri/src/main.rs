@@ -23,14 +23,9 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
-        // 1. The Setup Block (Handles the background color/flashbang fix)
-        .setup(|app| {
-            let window = app.get_window("main").unwrap();
-            Ok(())
-        })
-        // 2. The Plugin (Handles saving/restoring window size and position)
+        // 1. The Plugin (Handles saving/restoring window size and position)
         .plugin(tauri_plugin_window_state::Builder::default().build())
-        // 3. Your existing handlers
+        // 2. Your existing handlers
         .invoke_handler(tauri::generate_handler![file_exists, reveal_in_explorer])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
