@@ -23,8 +23,16 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Cache Tauri CLI
+        id: cache-tauri-cli
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/cargo-tauri.exe
+          key: ${{ runner.os }}-tauri-cli-1.5
+
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^1"
+        if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
+        run: cargo install tauri-cli --version "^1.5"
         working-directory: src-tauri
 
       - name: Build app
