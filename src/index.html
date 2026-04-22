@@ -823,6 +823,7 @@ const histCheckAll  = document.getElementById('hist-check-all');
 const histBulk      = document.getElementById('history-bulk');
 const histBulkCount = document.getElementById('hist-bulk-count');
 const histRemoveSel = document.getElementById('hist-remove-sel');
+const histAddQueue  = document.getElementById('hist-add-queue');
 const albumArtWrap  = document.getElementById('album-art-wrap');
 const albumArtBlur  = document.getElementById('album-art-blur');
 const albumArtImg   = document.getElementById('album-art-img');
@@ -998,7 +999,7 @@ function fmtDate(ts){
 }
 
 function histType(url){
-  if(!url||url.startsWith('blob:')) return 'local';
+  if(!url||url.startsWith('blob:')||/^https?:\/\/asset\.localhost/i.test(url)) return 'local';
   if(/\.m3u8($|\?)/i.test(url)) return 'hls';
   if(/\.mpd($|\?)/i.test(url)) return 'dash';
   if(/\.m3u($|\?)/i.test(url)) return 'm3u';
@@ -1082,24 +1083,58 @@ function renderHistory(){
     // Type
     const ttd=document.createElement('td'); ttd.className=`hist-td-type ${TYPE_CLS[entry.type]||''}`; ttd.textContent=TYPE_LABEL[entry.type]||entry.type.toUpperCase(); tr.appendChild(ttd);
 
-    // Link
-    const ltd=document.createElement('td'); ltd.className='hist-td-link';
-    if(entry.rawUrl){
-      const a=document.createElement('a'); a.className='hl'; a.href='#'; a.title=entry.rawUrl; a.textContent=entry.rawUrl;
-      a.addEventListener('click',ev=>{ev.stopPropagation();ev.preventDefault();});
-      ltd.appendChild(a);
-    } else if(entry.filePath){
-      const span=document.createElement('span');
-      span.className='hist-filepath'+(window.__TAURI__?' hist-filepath-clickable':'');
-      span.textContent=entry.filePath;
-      span.title=window.__TAURI__?'Ctrl+click to reveal in Explorer':entry.filePath;
-      span.addEventListener('click',ev=>{
-        ev.stopPropagation();
-        if((ev.ctrlKey||ev.metaKey)&&window.__TAURI__) openFileLocation(entry.filePath);
+    // Source
+    const ltd = document.createElement('td'); 
+    ltd.className = 'hist-td-link';
+
+    if (entry.rawUrl) {
+      const a = document.createElement('a'); 
+      a.className = 'hl'; 
+      a.href = '#'; 
+      a.title = entry.rawUrl; 
+      a.textContent = entry.rawUrl;
+      a.addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); });
+      
+      // Right-click → copy link for network streams
+      a.addEventListener('contextmenu', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        navigator.clipboard.writeText(entry.rawUrl)
+          .then(() => notif('Link copied to clipboard'))
+          .catch(() => notif('Could not copy link'));
       });
+      
+      ltd.appendChild(a);
+    } else if (entry.filePath) {
+      const span = document.createElement('span');
+      span.className = 'hist-filepath' + (window.__TAURI__ ? ' hist-filepath-clickable' : '');
+      span.title = window.__TAURI__ ? 'Ctrl+click to reveal in Explorer · Right-click to copy path' : entry.filePath;
+      
+      // MODIFIED: Prepend emoji and show the full absolute path instead of just the filename
+      span.textContent = `📂 ${entry.filePath}`;
+
+      // Ctrl+click → reveal in Explorer. Use mousedown so WebView2 doesn't intercept.
+      span.addEventListener('mousedown', ev => {
+        if (ev.button === 0 && (ev.ctrlKey || ev.metaKey)) {
+          ev.preventDefault(); ev.stopPropagation();
+          if (window.__TAURI__) openFileLocation(entry.filePath);
+        }
+      });
+
+      // Regular click still stops propagation so the tr handler doesn't fire
+      span.addEventListener('click', ev => ev.stopPropagation());
+
+      // Right-click → copy full path to clipboard, suppress context menu
+      span.addEventListener('contextmenu', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        // We copy entry.filePath directly so the emoji isn't included in the clipboard
+        navigator.clipboard.writeText(entry.filePath)
+          .then(() => notif('Path copied to clipboard'))
+          .catch(() => notif('Could not copy path'));
+      });
+
       ltd.appendChild(span);
     } else {
-      const em=document.createElement('em'); em.textContent='local file'; ltd.appendChild(em);
+      const em = document.createElement('em'); em.textContent = 'local file'; ltd.appendChild(em);
     }
     tr.appendChild(ltd);
 
@@ -2406,27 +2441,40 @@ histRemoveSel.addEventListener('click',()=>{
   renderHistory();
 });
 
-const histAddQueue = document.getElementById('hist-add-queue');
-histAddQueue.addEventListener('click',()=>{
+histAddQueue.addEventListener('click',async ()=>{
   const hist = loadHistRaw();
-  // histSelected is a Set — JS Sets preserve insertion order, so this is selection order
-  const toAdd = [...histSelected]
-    .map(id=>hist.find(h=>h.id===id))
-    .filter(e=>e&&e.rawUrl); // local files can't be re-added (no persistent path)
-  if(!toAdd.length){ notif('No network items selected (local files cannot be re-added)'); return; }
+  const toAdd = [...histSelected].map(id=>hist.find(h=>h.id===id)).filter(Boolean);
+  if(!toAdd.length){ notif('Nothing selected'); return; }
+
+  const networkItems = toAdd.filter(e=>e.rawUrl);
+  const localItems   = toAdd.filter(e=>!e.rawUrl&&e.filePath&&window.__TAURI__);
+
+  if(!networkItems.length&&!localItems.length){
+    notif('No re-addable items selected');
+    return;
+  }
+
   const wasEmpty = playlist.length===0;
-  toAdd.forEach(entry=>{
-    playlist.push({
-      title:entry.title,
-      url:entry.rawUrl,
-      dur:entry.duration || -1,
-      subtitles:[],
-      resumeKey:'n'+hashKey(entry.rawUrl)
-    });
+
+  // Network items — add directly
+  networkItems.forEach(entry=>{
+    playlist.push({title:entry.title,url:entry.rawUrl,dur:entry.duration||-1,subtitles:[],resumeKey:'n'+hashKey(entry.rawUrl)});
   });
+
+  // Local items — verify existence then add via Tauri convertFileSrc
+  for(const entry of localItems){
+    try{
+      const exists = await window.__TAURI__.invoke('file_exists',{path:entry.filePath});
+      if(!exists){ notif(`Not found: ${entry.title}`); continue; }
+      const src = window.__TAURI__.tauri.convertFileSrc(entry.filePath);
+      playlist.push({title:entry.title,url:src,dur:entry.duration||-1,subtitles:[],resumeKey:entry.key||('l'+hashKey(entry.filePath)),filePath:entry.filePath});
+    }catch(e){ notif(`Could not load: ${entry.title}`); }
+  }
+
   renderPlaylist();
   closeHistoryModal();
-  notif(`Added ${toAdd.length} item${toAdd.length>1?'s':''} to queue`);
+  const total=networkItems.length+localItems.length;
+  notif(`Added ${total} item${total>1?'s':''} to queue`);
   if(wasEmpty) playIndex(0);
 });
 
@@ -2581,6 +2629,10 @@ histPauseBtn.addEventListener('click',()=>{
   notif(historyPaused?'History paused':'History resumed');
 });
 
+// Disable browser context menu inside the history modal (right-click on source cells
+// is handled separately above and copies the path instead)
+document.getElementById('history-modal').addEventListener('contextmenu',ev=>ev.preventDefault());
+
 document.querySelectorAll('#history-table th[data-col]').forEach(th=>{
   th.addEventListener('click',()=>{
     // Suppress sort if user just finished a column resize drag
@@ -2605,30 +2657,48 @@ document.querySelectorAll('.hist-filter').forEach(btn=>{
 
 fsBtn.addEventListener('click', toggleFS);
 
-async function toggleFS() {
-  if (window.__TAURI__) {
-    // Tauri OS-level Fullscreen
-    const appWindow = window.__TAURI__.window.appWindow;
-    const isFS = await appWindow.isFullscreen();
-    await appWindow.setFullscreen(!isFS);
-    
-    // Update UI manually (the web 'fullscreenchange' event won't fire for OS fullscreen)
-    const fs = !isFS;
-    fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
-    fsQBtn.style.display = fs ? '' : 'none'; 
-    if (!fs) hideFsQueue();
+// 1. Windowed Fullscreen (HTML5 API - stays inside the Tauri window)
+async function toggleWindowedFS() {
+  if (!document.fullscreenElement) {
+    playerWrap.requestFullscreen().catch(()=>{});
   } else {
-    // Standard Web Fallback
-    if (!document.fullscreenElement) playerWrap.requestFullscreen().catch(()=>{});
-    else document.exitFullscreen();
+    document.exitFullscreen();
   }
 }
 
-// Keep this listener alive for the standard web fallback
+// 2. True OS Fullscreen (Tauri API - takes over whole monitor)
+async function toggleTrueFS() {
+  if (!window.__TAURI__) {
+    notif("OS Fullscreen requires Tauri app");
+    return;
+  }
+  const appWindow = window.__TAURI__.window.appWindow;
+  const isFS = await appWindow.isFullscreen();
+  await appWindow.setFullscreen(!isFS);
+  
+  if (!isFS) {
+    notif('OS Fullscreen (Shift+F to exit)');
+  }
+}
+
+// Bind the UI button to Windowed Fullscreen (your preferred default)
+fsBtn.addEventListener('click', e => {
+  toggleWindowedFS();
+  e.stopPropagation();
+});
+
+// Update the UI state when HTML5 Windowed fullscreen changes
 document.addEventListener('fullscreenchange', () => {
   const fs = !!document.fullscreenElement;
   fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
   fsQBtn.style.display = fs ? '' : 'none'; 
+  if (!fs) hideFsQueue();
+});
+
+document.addEventListener('fullscreenchange', () => {
+  const fs = !!document.fullscreenElement;
+  fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
+  fsQBtn.style.display = fs ? '' : 'none';
   if (!fs) hideFsQueue();
 });
 
@@ -2784,7 +2854,14 @@ if(e.key==='Escape'){
     case 'ArrowUp':    e.preventDefault(); video.volume=Math.min(1,Math.round((video.volume+.05)*100)/100); video.muted=false; notif('Vol '+Math.round(video.volume*100)+'%'); break;
     case 'ArrowDown':  e.preventDefault(); video.volume=Math.max(0,Math.round((video.volume-.05)*100)/100); video.muted=false; notif('Vol '+Math.round(video.volume*100)+'%'); break;
     case 'm':case 'M': e.preventDefault(); video.muted=!video.muted; notif(video.muted?'Muted':'Unmuted'); break;
-    case 'f':case 'F': e.preventDefault(); toggleFS(); break;
+    case 'f':case 'F': 
+      e.preventDefault(); 
+      if (e.shiftKey) {
+        toggleTrueFS(); // Shift + F = Monitor-wide OS Fullscreen
+      } else {
+        toggleWindowedFS(); // F = Windowed Fullscreen
+      }
+      break;
     case '>': e.preventDefault(); {const r=Math.min(4,Math.round((video.playbackRate+.25)*100)/100);video.playbackRate=r;notif(r+'× Speed');} break;
     case '<': e.preventDefault(); {const r=Math.max(0.05,Math.round((video.playbackRate-.25)*100)/100);video.playbackRate=r;notif(r+'× Speed');} break;
     case '.': e.preventDefault(); if(video.paused&&isFinite(d))video.currentTime=Math.min(d,video.currentTime+1/30); break;
