@@ -61,7 +61,6 @@
       {
         "label": "main",
         "visible": false, 
-        "backgroundColor": "#07070f",
         "fullscreen": false,
         "resizable": true,
         "title": "VECTO",
