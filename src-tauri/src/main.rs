@@ -22,6 +22,7 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![file_exists, reveal_in_explorer])
+        .plugin(tauri_plugin_window_state::Builder::default().build()) // Add this line
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

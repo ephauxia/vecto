@@ -2956,6 +2956,16 @@ fsQBtn.style.display='none';
 renderPlaylist();
 showControls();
 
+// At the bottom of your script section
+window.addEventListener('DOMContentLoaded', () => {
+  // Give it a tiny moment to ensure the first paint is ready
+  setTimeout(() => {
+    if (window.__TAURI__) {
+      window.__TAURI__.window.appWindow.show();
+    }
+  }, 100); 
+});
+
 })();
 </script>
 </body>
