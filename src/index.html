@@ -1110,7 +1110,7 @@ function renderHistory(){
       span.title = window.__TAURI__ ? 'Ctrl+click to reveal in Explorer · Right-click to copy path' : entry.filePath;
       
       // MODIFIED: Prepend emoji and show the full absolute path instead of just the filename
-      span.textContent = `📂 ${entry.filePath}`;
+      span.textContent = `${entry.filePath}`;
 
       // Ctrl+click → reveal in Explorer. Use mousedown so WebView2 doesn't intercept.
       span.addEventListener('mousedown', ev => {
@@ -2665,27 +2665,37 @@ fsBtn.addEventListener('click', (e) => {
   }
 });
 
-// 1. Windowed Fullscreen (HTML5 API - stays inside the Tauri window)
+// 1. Windowed Fullscreen (Inside the window)
 async function toggleWindowedFS() {
   if (!document.fullscreenElement) {
-    playerWrap.requestFullscreen().catch(()=>{});
+    // Entering windowed FS
+    await playerWrap.requestFullscreen().catch(() => {});
   } else {
-    document.exitFullscreen();
+    // Exiting: This will trigger the 'fullscreenchange' event 
+    // where we can handle further cleanup if needed.
+    await document.exitFullscreen();
   }
 }
 
-// 2. True OS Fullscreen (Tauri API - takes over whole monitor)
+// 2. True OS Fullscreen (Whole display)
 async function toggleTrueFS() {
-  if (!window.__TAURI__) {
-    notif("OS Fullscreen requires Tauri app");
-    return;
-  }
+  if (!window.__TAURI__) return;
   const appWindow = window.__TAURI__.window.appWindow;
-  const isFS = await appWindow.isFullscreen();
-  await appWindow.setFullscreen(!isFS);
-  
-  if (!isFS) {
-    notif('OS Fullscreen (Shift+F to exit)');
+  const isWindowFS = await appWindow.isFullscreen();
+
+  if (!isWindowFS) {
+    // Step 1: Make the OS window cover the screen
+    await appWindow.setFullscreen(true);
+    // Step 2: Make the video element fill that window
+    if (!document.fullscreenElement) {
+      await playerWrap.requestFullscreen().catch(() => {});
+    }
+  } else {
+    // Step 3: Exit everything
+    await appWindow.setFullscreen(false);
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    }
   }
 }
 
@@ -2695,12 +2705,22 @@ fsBtn.addEventListener('click', e => {
   e.stopPropagation();
 });
 
-// Update the UI state when HTML5 Windowed fullscreen changes
-document.addEventListener('fullscreenchange', () => {
-  const fs = !!document.fullscreenElement;
-  fsBtn.title = fs ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
-  fsQBtn.style.display = fs ? '' : 'none'; 
-  if (!fs) hideFsQueue();
+document.addEventListener('fullscreenchange', async () => {
+  const isHTMLFS = !!document.fullscreenElement;
+  
+  // Update UI icons
+  fsBtn.title = isHTMLFS ? 'Exit fullscreen (F)' : 'Fullscreen (F)';
+  if (typeof fsQBtn !== 'undefined') fsQBtn.style.display = isHTMLFS ? '' : 'none';
+
+  // THE FIX: If the user exits video fullscreen (via Esc key or button),
+  // but the Tauri window is still in OS Fullscreen, force it to exit.
+  if (!isHTMLFS && window.__TAURI__) {
+    const appWindow = window.__TAURI__.window.appWindow;
+    const isWindowFS = await appWindow.isFullscreen();
+    if (isWindowFS) {
+      await appWindow.setFullscreen(false);
+    }
+  }
 });
 
 document.addEventListener('fullscreenchange', () => {
@@ -2825,7 +2845,7 @@ video.addEventListener('touchend',  ()=>handleTouchRelease(false),  {passive:tru
 video.addEventListener('touchcancel',()=>handleTouchRelease(true),  {passive:true});
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
-document.addEventListener('keydown',e=>{
+document.addEventListener('keydown', async e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
 
 if(e.key==='Escape'){
@@ -2862,12 +2882,21 @@ if(e.key==='Escape'){
     case 'ArrowUp':    e.preventDefault(); video.volume=Math.min(1,Math.round((video.volume+.05)*100)/100); video.muted=false; notif('Vol '+Math.round(video.volume*100)+'%'); break;
     case 'ArrowDown':  e.preventDefault(); video.volume=Math.max(0,Math.round((video.volume-.05)*100)/100); video.muted=false; notif('Vol '+Math.round(video.volume*100)+'%'); break;
     case 'm':case 'M': e.preventDefault(); video.muted=!video.muted; notif(video.muted?'Muted':'Unmuted'); break;
-    case 'f':case 'F': 
-      e.preventDefault(); 
+    case 'f': case 'F':
+      e.preventDefault();
       if (e.shiftKey) {
-        toggleTrueFS(); // Shift + F = Monitor-wide OS Fullscreen
+        toggleTrueFS(); // This now handles both entering and exiting cleanly
       } else {
-        toggleWindowedFS(); // F = Windowed Fullscreen
+        // If we are currently in True OS Fullscreen, a simple 'F' 
+        // should probably take us all the way out.
+        if (window.__TAURI__) {
+          const isWindowFS = await window.__TAURI__.window.appWindow.isFullscreen();
+          if (isWindowFS) {
+            toggleTrueFS(); 
+            return;
+          }
+        }
+        toggleWindowedFS();
       }
       break;
     case '>': e.preventDefault(); {const r=Math.min(4,Math.round((video.playbackRate+.25)*100)/100);video.playbackRate=r;notif(r+'× Speed');} break;
@@ -2914,14 +2943,10 @@ document.addEventListener('keyup',e=>{
   }
 });
 
-// Video Double-Click (Defaults to Windowed Fullscreen)
+// Video double-click
 video.addEventListener('dblclick', (e) => {
   e.stopPropagation();
-  if (e.shiftKey) {
-    toggleTrueFS(); // Shift + Click = Monitor-wide
-  } else {
-    toggleWindowedFS(); // Simple Click = Inside the window
-  }
+  toggleWindowedFS(); 
 });
 
 video.addEventListener('contextmenu', e=>e.preventDefault());

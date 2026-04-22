@@ -7,13 +7,15 @@ fn file_exists(path: String) -> bool {
 
 #[tauri::command]
 fn reveal_in_explorer(path: String) -> Result<(), String> {
-    // Normalise to Windows backslashes
     let win_path = path.replace('/', "\\");
-    // /select highlights the specific file in Explorer rather than just opening the folder
+    
+    // THE FIX: Separate the flag and the path
     std::process::Command::new("explorer")
-        .arg(format!("/select,\"{}\"", win_path))
+        .arg("/select,")
+        .arg(&win_path)
         .spawn()
         .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
