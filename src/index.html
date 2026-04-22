@@ -2655,7 +2655,15 @@ document.querySelectorAll('.hist-filter').forEach(btn=>{
   });
 });
 
-fsBtn.addEventListener('click', toggleFS);
+// Fullscreen Button with Shift-key logic
+fsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (e.shiftKey) {
+    toggleTrueFS(); // Shift + Click = Monitor-wide
+  } else {
+    toggleWindowedFS(); // Simple Click = Inside the window
+  }
+});
 
 // 1. Windowed Fullscreen (HTML5 API - stays inside the Tauri window)
 async function toggleWindowedFS() {
@@ -2906,7 +2914,16 @@ document.addEventListener('keyup',e=>{
   }
 });
 
-video.addEventListener('dblclick',toggleFS);
+// Video Double-Click (Defaults to Windowed Fullscreen)
+video.addEventListener('dblclick', (e) => {
+  e.stopPropagation();
+  if (e.shiftKey) {
+    toggleTrueFS(); // Shift + Click = Monitor-wide
+  } else {
+    toggleWindowedFS(); // Simple Click = Inside the window
+  }
+});
+
 video.addEventListener('contextmenu', e=>e.preventDefault());
 loadSubSettings();  
 syncUI();           
