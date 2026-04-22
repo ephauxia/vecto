@@ -7,7 +7,7 @@ edition = "2021"
 tauri-build = { version = "1", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = ["window-set-background-color", "api-all"] }
+tauri = { version = "1.5", features = ["custom-protocol", "api-all"] }
 tauri-plugin-window-state = "0.1.1"
 
 [features]
