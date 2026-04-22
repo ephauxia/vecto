@@ -2868,6 +2868,10 @@ if(e.key==='Escape'){
   }
   if(e.code==='Space'&&e.repeat){e.preventDefault();return;}
 
+  const key = e.key.toLowerCase();
+  const noRepeatKeys = ['s', 'g', 'r', 'k', 'm', 'f', 'c', 'n', 'p', 'home', 'end'];
+  if (e.repeat && noRepeatKeys.includes(key)) return;
+
   const d=video.duration;
   switch(e.key){
     case 's':case 'S': e.preventDefault(); closeSettings(); toggleSpeedDialog(); break;
