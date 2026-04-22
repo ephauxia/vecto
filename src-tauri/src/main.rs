@@ -26,8 +26,6 @@ fn main() {
         // 1. The Setup Block (Handles the background color/flashbang fix)
         .setup(|app| {
             let window = app.get_window("main").unwrap();
-            // Sets the color to #07070f (RGB: 7, 7, 15)
-            window.set_background_color(Some(tauri::Color(7, 7, 15, 255))).unwrap();
             Ok(())
         })
         // 2. The Plugin (Handles saving/restoring window size and position)

@@ -2966,6 +2966,13 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 100); 
 });
 
+// Reveal the Tauri window only after the DOM (and dark theme) is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.__TAURI__) {
+    window.__TAURI__.window.appWindow.show().catch(console.error);
+  }
+});
+
 })();
 </script>
 </body>
