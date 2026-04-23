@@ -39,7 +39,8 @@
       "copyright": "",
       "externalBin": [],
       "icon": [
-        "icons/icon.ico"
+        "icons/icon.ico",
+        "icons/icon.png"
       ],
       "identifier": "com.vecto.player",
       "longDescription": "",
