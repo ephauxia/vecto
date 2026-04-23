@@ -7,19 +7,31 @@ fn file_exists(path: String) -> bool {
 
 #[tauri::command]
 fn reveal_in_explorer(path: String) -> Result<(), String> {
-    let win_path = path.replace('/', "\\");
-    
-    // THE FIX: Separate the flag and the path
-    std::process::Command::new("explorer")
-        .arg("/select,")
-        .arg(&win_path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "windows")]
+    {
+        let win_path = path.replace('/', "\\");
+        std::process::Command::new("explorer")
+            .arg("/select,")
+            .arg(&win_path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let parent = std::path::Path::new(&path)
+            .parent()
+            .and_then(|p| p.to_str())
+            .unwrap_or("/")
+            .to_string();
+        std::process::Command::new("xdg-open")
+            .arg(&parent)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
 
     Ok(())
 }
-
-use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
