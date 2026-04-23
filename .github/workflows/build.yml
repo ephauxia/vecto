@@ -49,7 +49,7 @@ jobs:
           retention-days: 30
 
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -58,8 +58,16 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev \
-            libappindicator3-dev librsvg2-dev patchelf libsoup2.4-dev
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev \
+            libappindicator3-dev librsvg2-dev patchelf libsoup2.4-dev \
+            libjavascriptcoregtk-4.1-dev
+
+      - name: Create pkg-config symlinks for Tauri 1.x compatibility
+        run: |
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc \
+            /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.1.pc \
+            /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.0.pc
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
