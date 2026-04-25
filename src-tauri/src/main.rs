@@ -35,9 +35,10 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        // 1. The Plugin (Handles saving/restoring window size and position)
         .plugin(tauri_plugin_window_state::Builder::default().build())
-        // 2. Your existing handlers
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![file_exists, reveal_in_explorer])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

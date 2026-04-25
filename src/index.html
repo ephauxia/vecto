@@ -1293,7 +1293,7 @@ async function queueLocalHistoryEntry(entry){
     if(!exists){ notif('File not found. It may have been moved or deleted.'); return; }
 
     const wasEmpty = playlist.length===0;
-    const src = window.__TAURI__.tauri.convertFileSrc(entry.filePath);
+    const src = window.__TAURI__.core.convertFileSrc(entry.filePath);
 
     playlist.push({
       title: entry.title,
@@ -2210,7 +2210,7 @@ async function handleTauriPaths(paths) {
     const items = [];
     for (const p of vid) {
       const name = p.split(/[\\/]/).pop();
-      const tauriUrl = window.__TAURI__.tauri.convertFileSrc(p);
+      const tauriUrl = window.__TAURI__.core.convertFileSrc(p);
       
       const item = {
         title: name,
@@ -2230,7 +2230,7 @@ async function handleTauriPaths(paths) {
         } catch(e) {}
 
         if (batchCoverPath) {
-          const coverUrl = window.__TAURI__.tauri.convertFileSrc(batchCoverPath);
+          const coverUrl = window.__TAURI__.core.convertFileSrc(batchCoverPath);
           if (!item.audioMeta) item.audioMeta = { art: coverUrl, artist: null, album: null, title: null };
           else if (!item.audioMeta.art) item.audioMeta.art = coverUrl;
         }
@@ -2466,7 +2466,7 @@ histAddQueue.addEventListener('click',async ()=>{
     try{
       const exists = await window.__TAURI__.invoke('file_exists',{path:entry.filePath});
       if(!exists){ notif(`Not found: ${entry.title}`); continue; }
-      const src = window.__TAURI__.tauri.convertFileSrc(entry.filePath);
+      const src = window.__TAURI__.core.convertFileSrc(entry.filePath);
       playlist.push({title:entry.title,url:src,dur:entry.duration||-1,subtitles:[],resumeKey:entry.key||('l'+hashKey(entry.filePath)),filePath:entry.filePath});
     }catch(e){ notif(`Could not load: ${entry.title}`); }
   }
@@ -2680,19 +2680,19 @@ async function toggleWindowedFS() {
 // 2. True OS Fullscreen (Whole display)
 async function toggleTrueFS() {
   if (!window.__TAURI__) return;
-  const appWindow = window.__TAURI__.window.appWindow;
-  const isWindowFS = await appWindow.isFullscreen();
+  const appWindow = window.__TAURI__.window.getCurrentWindow().show();
+  const isWindowFS = await getCurrentWindow().isFullscreen();
 
   if (!isWindowFS) {
     // Step 1: Make the OS window cover the screen
-    await appWindow.setFullscreen(true);
+    await getCurrentWindow().setFullscreen(true);
     // Step 2: Make the video element fill that window
     if (!document.fullscreenElement) {
       await playerWrap.requestFullscreen().catch(() => {});
     }
   } else {
     // Step 3: Exit everything
-    await appWindow.setFullscreen(false);
+    await getCurrentWindow().setFullscreen(false);
     if (document.fullscreenElement) {
       await document.exitFullscreen();
     }
@@ -2715,10 +2715,10 @@ document.addEventListener('fullscreenchange', async () => {
   // THE FIX: If the user exits video fullscreen (via Esc key or button),
   // but the Tauri window is still in OS Fullscreen, force it to exit.
   if (!isHTMLFS && window.__TAURI__) {
-    const appWindow = window.__TAURI__.window.appWindow;
-    const isWindowFS = await appWindow.isFullscreen();
+    const appWindow = window.__TAURI__.window.getCurrentWindow().show();
+    const isWindowFS = await getCurrentWindow().isFullscreen();
     if (isWindowFS) {
-      await appWindow.setFullscreen(false);
+      await getCurrentWindow().setFullscreen(false);
     }
   }
 });
@@ -2808,7 +2808,7 @@ window.addEventListener('drop', e => {
 
 // Intercept Tauri's native absolute file paths!
 if (window.__TAURI__) {
-  window.__TAURI__.event.listen('tauri://file-drop', event => {
+  window.__TAURI__.event.listen('tauri://drag-drop', event => {
     dropOverlay.style.display = '';
     if (event.payload && event.payload.length > 0) {
       handleTauriPaths(event.payload);
@@ -2894,7 +2894,7 @@ if(e.key==='Escape'){
         // If we are currently in True OS Fullscreen, a simple 'F' 
         // should probably take us all the way out.
         if (window.__TAURI__) {
-          const isWindowFS = await window.__TAURI__.window.appWindow.isFullscreen();
+          const isWindowFS = await window.__TAURI__.window.getCurrentWindow().show().isFullscreen();
           if (isWindowFS) {
             toggleTrueFS(); 
             return;
@@ -2960,20 +2960,13 @@ fsQBtn.style.display='none';
 renderPlaylist();
 showControls();
 
-// At the bottom of your script section
-window.addEventListener('DOMContentLoaded', () => {
-  // Give it a tiny moment to ensure the first paint is ready
-  setTimeout(() => {
-    if (window.__TAURI__) {
-      window.__TAURI__.window.appWindow.show();
-    }
-  }, 100); 
-});
-
 // Reveal the Tauri window only after the DOM (and dark theme) is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
   if (window.__TAURI__) {
-    window.__TAURI__.window.appWindow.show().catch(console.error);
+    // A tiny 50ms timeout guarantees the browser has painted the dark CSS
+    setTimeout(() => {
+      window.__TAURI__.window.getCurrentWindow().show().catch(console.error);
+    }, 50);
   }
 });
 
