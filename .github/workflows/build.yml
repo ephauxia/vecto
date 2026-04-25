@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cargo/bin/cargo-tauri.exe
-          key: ${{ runner.os }}-tauri-cli-1.5
+          key: ${{ runner.os }}-tauri-cli-2.0
 
       - name: Install Tauri CLI
         if: steps.cache-tauri-cli.outputs.cache-hit != 'true'
@@ -76,7 +76,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cargo/bin/cargo-tauri
-          key: ${{ runner.os }}-tauri-cli-1.5
+          key: ${{ runner.os }}-tauri-cli-2.0
 
       - name: Install Tauri CLI
         if: steps.cache-tauri-cli-linux.outputs.cache-hit != 'true'
