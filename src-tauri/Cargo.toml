@@ -24,7 +24,3 @@ codegen-units = 1
 lto = true
 opt-level = "s"
 strip = true
-
-[lib]
-name = "app_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
