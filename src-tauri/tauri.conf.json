@@ -2,7 +2,6 @@
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "devUrl": "../src",
     "frontendDist": "../src"
   },
   "bundle": {
