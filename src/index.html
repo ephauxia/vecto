@@ -1284,9 +1284,9 @@ function hideAlbumArt(){
 async function openFileLocation(filePath){
   if(!window.__TAURI__){ notif('Open file location requires the Tauri app'); return; }
   try{
-    const exists = await window.__TAURI__.invoke('file_exists', { path: filePath });
+    const exists = await window.__TAURI__.core.invoke('file_exists', { path: filePath });
     if(!exists){ notif('File not found. It may have been moved or deleted.'); return; }
-    await window.__TAURI__.invoke('reveal_in_explorer', { path: filePath });
+    await window.__TAURI__.core.invoke('reveal_in_explorer', { path: filePath });
   }catch(e){
     notif('Could not open file location.');
   }
@@ -1295,7 +1295,7 @@ async function openFileLocation(filePath){
 async function queueLocalHistoryEntry(entry){
   if(!window.__TAURI__){ notif('This feature requires the Tauri app'); return; }
   try{
-    const exists = await window.__TAURI__.invoke('file_exists', { path: entry.filePath });
+    const exists = await window.__TAURI__.core.invoke('file_exists', { path: entry.filePath });
     if(!exists){ notif('File not found. It may have been moved or deleted.'); return; }
 
     const wasEmpty = playlist.length===0;
@@ -2473,7 +2473,7 @@ histAddQueue.addEventListener('click',async ()=>{
   // Local items — verify existence then add via Tauri convertFileSrc
   for(const entry of localItems){
     try{
-      const exists = await window.__TAURI__.invoke('file_exists',{path:entry.filePath});
+      const exists = await window.__TAURI__.core.invoke('file_exists',{path:entry.filePath});
       if(!exists){ notif(`Not found: ${entry.title}`); continue; }
       const src = window.__TAURI__.core.convertFileSrc(entry.filePath);
       playlist.push({title:entry.title,url:src,dur:entry.duration||-1,subtitles:[],resumeKey:entry.key||('l'+hashKey(entry.filePath)),filePath:entry.filePath});
@@ -2821,8 +2821,16 @@ window.addEventListener('drop', e => {
   if (!window.__TAURI__) handleFileList(Array.from(e.dataTransfer.files));
 });
 
-// Intercept Tauri's native absolute file paths!
 if (window.__TAURI__) {
+  window.__TAURI__.event.listen('tauri://drag-enter', () => {
+    dropOverlay.style.display = 'flex';
+  });
+  window.__TAURI__.event.listen('tauri://drag-over', () => {
+    dropOverlay.style.display = 'flex';
+  });
+  window.__TAURI__.event.listen('tauri://drag-leave', () => {
+    dropOverlay.style.display = '';
+  });
   window.__TAURI__.event.listen('tauri://drag-drop', event => {
     dropOverlay.style.display = '';
     if (event.payload?.paths?.length > 0) {
@@ -2903,20 +2911,7 @@ if(e.key==='Escape'){
     case 'm':case 'M': e.preventDefault(); video.muted=!video.muted; notif(video.muted?'Muted':'Unmuted'); break;
     case 'f': case 'F':
       e.preventDefault();
-      if (e.shiftKey) {
-        toggleTrueFS(); // This now handles both entering and exiting cleanly
-      } else {
-        // If we are currently in True OS Fullscreen, a simple 'F' 
-        // should probably take us all the way out.
-        if (window.__TAURI__) {
-          const isWindowFS = await window.__TAURI__.window.getCurrentWindow().show().isFullscreen();
-          if (isWindowFS) {
-            toggleTrueFS(); 
-            return;
-          }
-        }
-        toggleWindowedFS();
-      }
+      e.shiftKey ? toggleWFS() : toggleTrueFS();
       break;
     case '>': e.preventDefault(); {const r=Math.min(4,Math.round((video.playbackRate+.25)*100)/100);video.playbackRate=r;notif(r+'× Speed');} break;
     case '<': e.preventDefault(); {const r=Math.max(0.05,Math.round((video.playbackRate-.25)*100)/100);video.playbackRate=r;notif(r+'× Speed');} break;
@@ -2963,9 +2958,9 @@ document.addEventListener('keyup',e=>{
 });
 
 // Video double-click
-video.addEventListener('dblclick', (e) => {
+video.addEventListener('dblclick', e => {
   e.stopPropagation();
-  toggleWindowedFS(); 
+  toggleTrueFS();
 });
 
 video.addEventListener('contextmenu', e=>e.preventDefault());

@@ -10,19 +10,12 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let win_path = path.replace('/', "\\");
-        std::process::Command::new("explorer")
-            .arg(format!("/select,{}", win_path))
+        std::process::Command::new("explorer.exe")
+            .raw_arg(format!("/select,\"{}\"", win_path))
             .spawn()
             .map_err(|e| e.to_string())?;
     }
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open")
-            .arg("-R")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
+
     #[cfg(target_os = "linux")]
     {
         // Most Linux file managers accept a direct path and will highlight the file
