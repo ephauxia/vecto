@@ -853,6 +853,8 @@ let isResizing      = false;
 let resizeStartX    = 0;
 let resizeStartW    = 0;
 let panelW          = 268;
+let isWFS = false;
+let wasWFSBeforeTrueFS = false;
 
 // Loop mode: 'normal' | 'loop-all' | 'loop-one' | 'stop'
 const LOOP_CYCLE  = ['normal','loop-all','loop-one','stop'];
@@ -2665,7 +2667,6 @@ document.querySelectorAll('.hist-filter').forEach(btn=>{
 });
 
 // ── Fullscreen ────────────────────────────────────────────────────────────────
-let isWFS = false;
 
 function isAnyFS() {
   return isWFS || !!document.fullscreenElement;
@@ -2673,31 +2674,29 @@ function isAnyFS() {
 
 function updateFsUI() {
   const anyFS = isAnyFS();
-  fsBtn.title = anyFS ? 'Exit fullscreen (F / Shift+F )' : 'Fullscreen (F) · Windowed (Shift+F)';
+  fsBtn.title = anyFS ? 'Exit fullscreen (F / Shift+F)' : 'Fullscreen (F) · Windowed (Shift+F)';
   fsQBtn.style.display = !!document.fullscreenElement ? '' : 'none';
   if (!isAnyFS()) hideFsQueue();
 }
 
 async function exitAllFS() {
-  if (isWFS) {
-    isWFS = false;
-    playerWrap.classList.remove('wfs');
-  }
-  if (document.fullscreenElement) {
-    await document.exitFullscreen();
-  }
+  const returnToWFS = wasWFSBeforeTrueFS;
+  wasWFSBeforeTrueFS = false;
+  isWFS = false;
+  playerWrap.classList.remove('wfs');
+  if (document.fullscreenElement) await document.exitFullscreen();
   if (window.__TAURI__) {
     const win = window.__TAURI__.window.getCurrentWindow();
     if (await win.isFullscreen()) await win.setFullscreen(false);
   }
-  updateFsUI();
+  if (returnToWFS) await enterWFS();
+  else updateFsUI();
 }
 
 async function enterTrueFS() {
-  if (isWFS) {
-    isWFS = false;
-    playerWrap.classList.remove('wfs');
-  }
+  if (isWFS) wasWFSBeforeTrueFS = true;
+  isWFS = false;
+  playerWrap.classList.remove('wfs');
   if (window.__TAURI__) {
     await window.__TAURI__.window.getCurrentWindow().setFullscreen(true);
   }
@@ -2706,6 +2705,7 @@ async function enterTrueFS() {
 }
 
 async function enterWFS() {
+  wasWFSBeforeTrueFS = false;
   if (document.fullscreenElement) await document.exitFullscreen();
   if (window.__TAURI__) {
     const win = window.__TAURI__.window.getCurrentWindow();
@@ -2723,6 +2723,24 @@ async function toggleTrueFS() {
 async function toggleWFS() {
   isAnyFS() ? await exitAllFS() : await enterWFS();
 }
+
+fsBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  e.shiftKey ? toggleWFS() : toggleTrueFS();
+});
+
+video.addEventListener('dblclick', e => {
+  e.stopPropagation();
+  toggleTrueFS();
+});
+
+document.addEventListener('fullscreenchange', async () => {
+  if (!document.fullscreenElement && window.__TAURI__) {
+    const win = window.__TAURI__.window.getCurrentWindow();
+    if (await win.isFullscreen()) await win.setFullscreen(false);
+  }
+  updateFsUI();
+});
 
 // Button
 fsBtn.addEventListener('click', e => {
