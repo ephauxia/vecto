@@ -853,8 +853,6 @@ let isResizing      = false;
 let resizeStartX    = 0;
 let resizeStartW    = 0;
 let panelW          = 268;
-let isWFS = false;
-let wasWFSBeforeTrueFS = false;
 
 // Loop mode: 'normal' | 'loop-all' | 'loop-one' | 'stop'
 const LOOP_CYCLE  = ['normal','loop-all','loop-one','stop'];
@@ -2734,27 +2732,6 @@ video.addEventListener('dblclick', e => {
   toggleTrueFS();
 });
 
-document.addEventListener('fullscreenchange', async () => {
-  if (!document.fullscreenElement && window.__TAURI__) {
-    const win = window.__TAURI__.window.getCurrentWindow();
-    if (await win.isFullscreen()) await win.setFullscreen(false);
-  }
-  updateFsUI();
-});
-
-// Button
-fsBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  e.shiftKey ? toggleWFS() : toggleTrueFS();
-});
-
-// Double-click player area
-video.addEventListener('dblclick', e => {
-  e.stopPropagation();
-  toggleTrueFS();
-});
-
-// Sync UI when browser exits fullscreen via Esc key
 document.addEventListener('fullscreenchange', async () => {
   if (!document.fullscreenElement && window.__TAURI__) {
     const win = window.__TAURI__.window.getCurrentWindow();
