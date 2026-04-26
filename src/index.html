@@ -2665,6 +2665,8 @@ document.querySelectorAll('.hist-filter').forEach(btn=>{
 });
 
 // ── Fullscreen ────────────────────────────────────────────────────────────────
+let isWFS = false;
+let wasWFSBeforeTrueFS = false;
 
 function isAnyFS() {
   return isWFS || !!document.fullscreenElement;
@@ -2725,11 +2727,6 @@ async function toggleWFS() {
 fsBtn.addEventListener('click', e => {
   e.stopPropagation();
   e.shiftKey ? toggleWFS() : toggleTrueFS();
-});
-
-video.addEventListener('dblclick', e => {
-  e.stopPropagation();
-  toggleTrueFS();
 });
 
 document.addEventListener('fullscreenchange', async () => {
