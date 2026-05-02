@@ -1,8 +1,5 @@
 // ── VECTO / ui.js ─────────────────────────────────────────────────────────────
 // Notification display, panel close helper, and the modal manager.
-// The modal manager is a Round 0 placeholder — stubs are wired up here so
-// every module that will eventually call openModal/closeModal can import them
-// now without modification later.
 
 import { state } from './state.js';
 
@@ -48,44 +45,124 @@ export function closeAllPanels() {
 }
 
 // ── Modal Manager ─────────────────────────────────────────────────────────────
-// Round 0 placeholder.
 //
-// The full implementation will support modal stacking so that a child modal
-// opened from within a parent (e.g. Help opened from CORS Warning, Help opened
-// from Telegram Auth) can be closed without destroying the parent's state or
-// unsaved input.
+// Manages a stack of open modals so that a child modal opened from within a
+// parent (e.g. Help opened from CORS Warning, Help opened from Telegram Auth)
+// can be closed without destroying the parent's state or unsaved input.
 //
-// Modal pairs that depend on this behaviour:
+// Stack semantics
+// ───────────────
+// open(id)  → pushes the modal onto the stack and shows it. The parent modal's
+//             DOM element is left untouched — it stays visible underneath.
+// close(id) → removes that entry from the stack by id and hides its element.
+//             Every other modal in the stack — including any parent — remains
+//             exactly as it was.
+// closeAll  → tears down the stack in reverse open order.
+//
+// Options
+// ───────
+// onClose  {Function} — fired synchronously after the element is hidden and
+//                       the entry is removed from the stack.
+// scrollTo {string}   — a data-section attribute value or bare element id to
+//                       smooth-scroll to after the modal is shown. Used by
+//                       Help links inside other modals to land on the right
+//                       section without a separate navigate step.
+//
+// Modal pairs that depend on stacking
+// ────────────────────────────────────
 //   CORS Warning Modal  → Help Modal (CORS section)
 //   Telegram Auth Modal → Help Modal (Telegram Instructions section)
 //
-// Planned public API:
-//   modalManager.open(id, options)   — push a modal onto the stack and show it
-//   modalManager.close(id)           — pop the top modal; restore parent if any
-//   modalManager.closeAll()          — clear the entire stack
-//   modalManager.getCurrent()        — return the id of the topmost open modal
-//
-// The options object will support:
-//   { onClose: fn }                  — callback fired when this modal is closed
-//   { scrollTo: sectionId }          — scroll to a named section on open
-//                                      (used by Help links in other modals)
+// Public API
+// ──────────
+//   modalManager.open(id, options)   open a modal; push onto stack
+//   modalManager.close(id)           close a specific modal by id
+//   modalManager.closeAll()          close all open modals
+//   modalManager.getCurrent()        id of the topmost open modal, or null
+//   modalManager.isOpen(id)          true if the named modal is in the stack
 
 export const modalManager = {
-  _stack: [],
+  _stack: /** @type {{ id: string, options: Object }[]} */ ([]),
 
+  /**
+   * Open a modal and push it onto the stack.
+   *
+   * No-ops if the modal is already in the stack — prevents double-push from
+   * rapid clicks or keyboard shortcuts.
+   *
+   * @param {string} id
+   * @param {{ onClose?: Function, scrollTo?: string }} [options]
+   */
   open(id, options = {}) {
-    // TODO: Round 0 — show modal element, push { id, options } onto _stack
+    if (this._stack.some(e => e.id === id)) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    this._stack.push({ id, options });
+    el.classList.add('open');
+
+    // Scroll to a named section after the browser has painted the modal.
+    // Callers use data-section="<name>" on section wrapper elements; a plain
+    // id also works as a fallback.
+    if (options.scrollTo) {
+      requestAnimationFrame(() => {
+        const target =
+          el.querySelector(`[data-section="${options.scrollTo}"]`) ??
+          el.querySelector(`#${options.scrollTo}`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   },
 
+  /**
+   * Close a specific modal by id.
+   *
+   * Removes the entry from the stack (regardless of position) and hides the
+   * element. All other stacked modals — including any parent — are unaffected.
+   * Fires the onClose callback if one was registered.
+   *
+   * @param {string} id
+   */
   close(id) {
-    // TODO: Round 0 — hide modal element, pop from _stack, restore parent
+    const idx = this._stack.findIndex(e => e.id === id);
+    if (idx === -1) return;
+
+    const { options } = this._stack[idx];
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+    this._stack.splice(idx, 1);
+
+    if (typeof options.onClose === 'function') options.onClose();
   },
 
+  /**
+   * Close all open modals in reverse open order (top-most first).
+   * Fires each modal's onClose callback.
+   */
   closeAll() {
-    // TODO: Round 0 — close every stacked modal in reverse order
+    for (let i = this._stack.length - 1; i >= 0; i--) {
+      const { id, options } = this._stack[i];
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('open');
+      if (typeof options.onClose === 'function') options.onClose();
+    }
+    this._stack = [];
   },
 
+  /**
+   * Return the id of the topmost open modal, or null if the stack is empty.
+   * @returns {string|null}
+   */
   getCurrent() {
     return this._stack.length ? this._stack[this._stack.length - 1].id : null;
+  },
+
+  /**
+   * Return true if the named modal is currently in the stack (open).
+   * @param {string} id
+   * @returns {boolean}
+   */
+  isOpen(id) {
+    return this._stack.some(e => e.id === id);
   },
 };
