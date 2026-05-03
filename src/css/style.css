@@ -289,7 +289,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .sc-item { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .sc-item.sc-hidden { display: none; }
 .sc-key { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); font-size: 9.5px; padding: 1px 5px; border-radius: 3px; letter-spacing: .05em; white-space: nowrap; }
-.sc-label { color: #817fa2; font-size: 9.5px; letter-spacing: .05em; white-space: nowrap; }
+.sc-label { color: var(--muted); font-size: 9.5px; letter-spacing: .05em; white-space: nowrap; }
 
 /* Fade — only when chips overflow */
 #shortcut-bar.sc-overflows #sc-chips {
