@@ -36,6 +36,7 @@
       <button class="btn" id="queue-btn">QUEUE <span id="queue-count"></span></button>
       <button class="btn" id="history-btn" style="margin-left:auto" title="Playback History">↺ HISTORY</button>
       <button class="btn" id="help-btn" title="Help">?</button>
+      <button id="app-gear-btn" title="App Settings">⚙</button>
     </div>
   </div>
 
@@ -480,7 +481,74 @@
       </div><!-- /#help-body -->
     </div><!-- /#help-modal -->
   </div><!-- /#help-overlay -->
+<!-- App Settings modal -->
+<div id="app-settings-overlay">
+  <div id="app-settings-modal">
+    <div id="as-head">
+      <span class="as-title">APP SETTINGS</span>
+      <button class="hist-close" id="as-close-btn">✕</button>
+    </div>
+    <div id="as-body">
 
+      <div class="as-section">
+        <div class="as-section-label">HISTORY</div>
+        <div class="as-row">
+          <span class="as-label">Retain history for</span>
+          <div class="as-input-unit">
+            <input type="number" id="as-hist-days" min="1" max="28" value="5">
+            <span class="as-unit">days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="as-section">
+        <div class="as-section-label">INTERFACE</div>
+        <div class="as-row">
+          <span class="as-label">Show shortcut bar</span>
+          <label class="switch">
+            <input type="checkbox" id="as-sc-bar-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="as-section as-tauri-only">
+        <div class="as-section-label">SESSION <span class="as-desktop-tag">DESKTOP</span></div>
+        <div class="as-row">
+          <div>
+            <div class="as-label">Remember window size</div>
+            <div class="as-sublabel">Restores position on relaunch</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="as-window-mem-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="as-row">
+          <div>
+            <div class="as-label">Remember CORS Bypass state</div>
+            <div class="as-sublabel">Re-enables proxy automatically</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="as-cors-mem-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="as-row">
+          <div>
+            <div class="as-label">Remember subtitle font</div>
+            <div class="as-sublabel">Preserves custom font across sessions</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="as-font-mem-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- /#app-settings-overlay -->
 </div><!-- /#app -->
 </body>
 </html>
