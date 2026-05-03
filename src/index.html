@@ -35,6 +35,7 @@
       <input type="file" id="file-input" multiple accept="video/*,audio/*,.m3u,.m3u8,.mpd,.mkv,.avi,.mov,.wmv,.flv,.ts,.webm">
       <button class="btn" id="queue-btn">QUEUE <span id="queue-count"></span></button>
       <button class="btn" id="history-btn" style="margin-left:auto" title="Playback History">↺ HISTORY</button>
+      <button class="btn" id="help-btn" title="Help">?</button>
     </div>
   </div>
 
@@ -290,22 +291,10 @@
   </div><!-- /#main -->
 
   <div id="shortcut-bar">
-    <div class="sc-item"><span class="sc-key">SPACE / K</span><span class="sc-label">Play/Pause</span></div>
-    <div class="sc-item"><span class="sc-key">HOLD SPACE</span><span class="sc-label">2× Temp</span></div>
-    <div class="sc-item"><span class="sc-key">J / L</span><span class="sc-label">±10s</span></div>
-    <div class="sc-item"><span class="sc-key">← →</span><span class="sc-label">±5s</span></div>
-    <div class="sc-item"><span class="sc-key">↑ ↓</span><span class="sc-label">Volume</span></div>
-    <div class="sc-item"><span class="sc-key">M</span><span class="sc-label">Mute</span></div>
-    <div class="sc-item"><span class="sc-key">F</span><span class="sc-label">Fullscreen</span></div>
-    <div class="sc-item"><span class="sc-key">R</span><span class="sc-label">Loop mode</span></div>
-    <div class="sc-item"><span class="sc-key">Q</span><span class="sc-label">Toggle Queue</span></div>
-    <div class="sc-item"><span class="sc-key">P</span><span class="sc-label">Pic-in-Pic</span></div>
-    <div class="sc-item"><span class="sc-key">C</span><span class="sc-label">Toggle Subs</span></div>
-    <div class="sc-item"><span class="sc-key">Shift+C</span><span class="sc-label">Sub Settings</span></div>
-    <div class="sc-item"><span class="sc-key">S</span><span class="sc-label">Speed dial</span></div>
-    <div class="sc-item"><span class="sc-key">G</span><span class="sc-label">Tracks</span></div>
-    <div class="sc-item"><span class="sc-key">&lt; &gt;</span><span class="sc-label">Speed step</span></div>
-    <div class="sc-item"><span class="sc-key">0–9</span><span class="sc-label">Seek %</span></div>
+    <div id="sc-chips">
+      <!-- Populated dynamically by help.js / renderShortcutBar() -->
+    </div>
+    <button id="sc-edit-btn" title="Customize shortcuts">✏</button>
   </div>
 
   <!-- Playback history modal -->
@@ -356,6 +345,141 @@
       </div>
     </div>
   </div><!-- /#history-overlay -->
+
+  <!-- Help modal -->
+  <div id="help-overlay">
+    <div id="help-modal">
+      <div id="help-head">
+        <span class="help-head-title">HELP</span>
+        <button class="hist-close" id="help-close-btn">✕</button>
+      </div>
+      <div id="help-nav">
+        <button class="help-nav-btn active" data-section="shortcuts">Keyboard Shortcuts</button>
+        <button class="help-nav-btn" data-section="telegram">Telegram Setup</button>
+        <button class="help-nav-btn" data-section="cors">CORS Bypass</button>
+      </div>
+      <div id="help-body">
+
+        <!-- ── Keyboard Shortcuts ─────────────────────────────────────────── -->
+        <div class="help-section active" id="help-sec-shortcuts">
+          <div class="help-sc-grid">
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">PLAYBACK</div>
+              <div class="help-sc-row"><span class="help-key">Space / K</span><span class="help-desc">Play / Pause</span></div>
+              <div class="help-sc-row"><span class="help-key">Hold Space</span><span class="help-desc">Temporary 2× speed (release to restore)</span></div>
+              <div class="help-sc-row"><span class="help-key">. / ,</span><span class="help-desc">Step forward / back one frame (while paused)</span></div>
+              <div class="help-sc-row"><span class="help-key">R</span><span class="help-desc">Cycle loop mode — Off → All → One → Stop at end</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">SEEKING</div>
+              <div class="help-sc-row"><span class="help-key">← / →</span><span class="help-desc">Seek ±5 seconds</span></div>
+              <div class="help-sc-row"><span class="help-key">J / L</span><span class="help-desc">Seek ±10 seconds</span></div>
+              <div class="help-sc-row"><span class="help-key">0 – 9</span><span class="help-desc">Jump to 0% – 90% of duration</span></div>
+              <div class="help-sc-row"><span class="help-key">Home</span><span class="help-desc">Jump to beginning</span></div>
+              <div class="help-sc-row"><span class="help-key">End</span><span class="help-desc">Jump near end (−5 s)</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">SPEED</div>
+              <div class="help-sc-row"><span class="help-key">S</span><span class="help-desc">Open speed dial (custom speed entry)</span></div>
+              <div class="help-sc-row"><span class="help-key">&lt; / &gt;</span><span class="help-desc">Decrease / increase speed by 0.25×</span></div>
+              <div class="help-sc-row"><span class="help-key">↑ / ↓ in dial</span><span class="help-desc">Fine-step ±0.05× (Shift: ±0.01×)</span></div>
+              <div class="help-sc-row"><span class="help-key">Enter / S</span><span class="help-desc">Close speed dial</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">VOLUME</div>
+              <div class="help-sc-row"><span class="help-key">↑ / ↓</span><span class="help-desc">Volume +5% / −5%</span></div>
+              <div class="help-sc-row"><span class="help-key">M</span><span class="help-desc">Mute / Unmute</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">QUEUE &amp; NAVIGATION</div>
+              <div class="help-sc-row"><span class="help-key">Shift+N</span><span class="help-desc">Next item</span></div>
+              <div class="help-sc-row"><span class="help-key">Shift+P</span><span class="help-desc">Previous item</span></div>
+              <div class="help-sc-row"><span class="help-key">Q</span><span class="help-desc">Toggle sidebar queue (or fullscreen queue overlay)</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">DISPLAY</div>
+              <div class="help-sc-row"><span class="help-key">F</span><span class="help-desc">True fullscreen (OS native)</span></div>
+              <div class="help-sc-row"><span class="help-key">Shift+F</span><span class="help-desc">Windowed fullscreen (no OS chrome)</span></div>
+              <div class="help-sc-row"><span class="help-key">P</span><span class="help-desc">Picture-in-Picture</span></div>
+              <div class="help-sc-row"><span class="help-key">Double-click</span><span class="help-desc">Toggle true fullscreen</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">SUBTITLES</div>
+              <div class="help-sc-row"><span class="help-key">C</span><span class="help-desc">Toggle subtitles on / off</span></div>
+              <div class="help-sc-row"><span class="help-key">Shift+C</span><span class="help-desc">Open subtitle settings panel</span></div>
+            </div>
+            <div class="help-sc-group">
+              <div class="help-sc-group-label">OTHER</div>
+              <div class="help-sc-row"><span class="help-key">G</span><span class="help-desc">Tracks &amp; Quality panel</span></div>
+              <div class="help-sc-row"><span class="help-key">Escape</span><span class="help-desc">Close topmost modal or panel</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Telegram Setup ─────────────────────────────────────────────── -->
+        <div class="help-section" id="help-sec-telegram">
+          <div class="help-prose">
+            <p class="help-note help-note-platform">ℹ This feature requires the desktop app (Tauri). It is not available in the browser-only build.</p>
+
+            <h3>Playing videos from private Telegram channels</h3>
+            <p>VECTO can stream videos directly from private Telegram channels — including ones that restrict forwarding — without downloading them first. Here's how to set it up.</p>
+
+            <h4>Step 1 — Get your API credentials</h4>
+            <ol>
+              <li>Go to <a href="https://my.telegram.org" target="_blank" rel="noopener">my.telegram.org</a> and log in with your phone number.</li>
+              <li>Click <strong>API Development Tools</strong>.</li>
+              <li>Fill in the app form (name and short name can be anything). Submit.</li>
+              <li>Note your <strong>App api_id</strong> and <strong>App api_hash</strong>. Keep these private — do not share them.</li>
+            </ol>
+
+            <h4>Step 2 — Enter credentials in VECTO</h4>
+            <ol>
+              <li>Click the <strong>Telegram</strong> button in the top bar.</li>
+              <li>Enter your <code>api_id</code>, <code>api_hash</code>, and the phone number linked to your Telegram account (with country code, e.g. <code>+91xxxxxxxxxx</code>).</li>
+              <li>Click <strong>Save</strong> and restart the app when prompted.</li>
+            </ol>
+
+            <h4>Step 3 — Authenticate on first use</h4>
+            <ol>
+              <li>After restart, click the Telegram button again.</li>
+              <li>VECTO will send a login code to your Telegram account (via the official Telegram app or SMS).</li>
+              <li>Enter the code when prompted. If your account has two-factor authentication enabled, you will also be asked for your password.</li>
+            </ol>
+
+            <h4>Step 4 — Stream a video</h4>
+            <ol>
+              <li>In Telegram, right-click (or long-press) a video and copy its link.</li>
+              <li>Paste the link into the VECTO URL bar and press <strong>ADD</strong> or Enter.</li>
+              <li>Playback begins immediately — no download required.</li>
+            </ol>
+
+            <p class="help-note">Your credentials are stored securely in your OS keyring and are never sent to any server other than Telegram's own infrastructure.</p>
+          </div>
+        </div>
+
+        <!-- ── CORS Bypass ────────────────────────────────────────────────── -->
+        <div class="help-section" id="help-sec-cors">
+          <div class="help-prose">
+            <h3>What is CORS Bypass?</h3>
+
+            <h4>The short version — when would I need this?</h4>
+            <p>If you paste a stream URL into VECTO and it refuses to load with an error like <em>"blocked by CORS policy"</em> or simply fails silently, CORS Bypass may fix it.</p>
+            <p>This happens most often with streams from servers that haven't been configured to allow playback from outside their own website — for example, streams embedded in a third-party site. Enabling CORS Bypass routes the request through a local proxy running on your machine, which strips the restriction.</p>
+
+            <h4>The technical version</h4>
+            <p>Browsers enforce the <strong>Cross-Origin Resource Sharing (CORS)</strong> policy: a page on one origin (e.g. <code>tauri://localhost</code>) cannot fetch resources from a different origin unless the remote server explicitly allows it via the <code>Access-Control-Allow-Origin</code> header.</p>
+            <p>When CORS Bypass is enabled, VECTO starts a lightweight local HTTP proxy (implemented in Rust, running on <code>127.0.0.1</code> on a random port). Stream requests are rewritten to pass through this proxy, which forwards them to the real server and injects the required CORS headers on the response before handing it back to the player. The proxy runs entirely on your machine — no data is routed through any external service.</p>
+
+            <h4>Should I leave it on all the time?</h4>
+            <p>No. Enable it only when a specific stream fails to load. Leaving it enabled adds a small latency overhead to every request and bypasses a browser security boundary that exists for good reason. For streams that load without it, leave it off.</p>
+
+            <p class="help-note help-note-platform">ℹ CORS Bypass requires the desktop app (Tauri). The option is not available in the browser-only build.</p>
+          </div>
+        </div>
+
+      </div><!-- /#help-body -->
+    </div><!-- /#help-modal -->
+  </div><!-- /#help-overlay -->
 
 </div><!-- /#app -->
 </body>

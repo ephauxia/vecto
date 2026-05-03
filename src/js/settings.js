@@ -12,6 +12,7 @@ export const KEYS = {
   HIST:            'vecto_hist',
   RESUME_PREFIX:   'vecto_r_',       // resume keys are RESUME_PREFIX + item.resumeKey
   HIST_COL_WIDTHS: 'vecto_hist_col_widths',
+  SHORTCUT_PREFS:  'vecto_shortcut_prefs',
 };
 
 // ── Generic get / set / remove ────────────────────────────────────────────────

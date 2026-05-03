@@ -19,6 +19,8 @@ import { initSubtitles, setSubEnabled,
          convertSubsToVtt,
          attachSubtitleToCurrentItem }            from './subtitles.js';
 import { toggleFsQueue }                          from './queue.js';
+import { initHelp, openHelpModal,
+         closeHelpModal, isHelpOpen }             from './help.js';
 
 // ── DOM refs used only in main.js ─────────────────────────────────────────────
 const video       = document.getElementById('video');
@@ -259,9 +261,10 @@ document.addEventListener('keydown', async e => {
 
   // Escape — close modals/panels in priority order
   if (e.key === 'Escape') {
-    if (histOverlay.classList.contains('open')) { closeHistoryModal(); e.preventDefault(); return; }
-    if (speedDialog.classList.contains('open')) { closeSpeedDialog(); e.preventDefault(); return; }
-    if (settingsPanel.classList.contains('open')) { closeSettings(); e.preventDefault(); }
+    if (isHelpOpen())                             { closeHelpModal();     e.preventDefault(); return; }
+    if (histOverlay.classList.contains('open'))   { closeHistoryModal();  e.preventDefault(); return; }
+    if (speedDialog.classList.contains('open'))   { closeSpeedDialog();   e.preventDefault(); return; }
+    if (settingsPanel.classList.contains('open')) { closeSettings();      e.preventDefault(); }
     return;
   }
 
@@ -431,6 +434,7 @@ document.addEventListener('keyup', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+initHelp();
 initSubtitles();
 initQueue();
 initPlayer();
