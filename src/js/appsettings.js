@@ -2,18 +2,18 @@
 // App Settings modal — opened via the gear icon at the far-right of the header.
 //
 // Fully working this round:
-//   • History retention days (overrides the HIST_DAYS constant at runtime)
+//   • History retention days (overrides HIST_DAYS constant at runtime)
 //   • Shortcut bar show/hide
 //
-// Pref-save only this round (wired in later rounds):
-//   • Remember window size   (Round 3 — Rust restart modal)
-//   • Remember CORS state    (Round 2 CORS proxy — separate session)
+// Pref-save only this round (runtime wiring in later rounds):
+//   • Remember window size   (Round 3 — Tauri window-state plugin)
+//   • Remember CORS state    (cors.js reads CORS_MEM/CORS_STATE on boot)
 //   • Remember subtitle font (Round 2 font overhaul — separate session)
 //
 // Exports: initAppSettings, openAppSettings, closeAppSettings, isAppSettingsOpen
 
-import { getPref, setPref, KEYS, HIST_DAYS } from './settings.js';
-import { notif }                               from './ui.js';
+import { getPref, setPref, removePref, KEYS, HIST_DAYS } from './settings.js';
+import { notif }                                           from './ui.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const overlay       = document.getElementById('app-settings-overlay');
@@ -38,9 +38,9 @@ function _loadIntoUI() {
   scBarToggle.checked = getPref(KEYS.SC_BAR_HIDDEN) !== true;
 
   if (window.__TAURI__) {
-    windowMemTgl.checked = getPref(KEYS.WINDOW_MEM) !== false; // default on
-    corsMemTgl.checked   = getPref(KEYS.CORS_MEM)   === true;  // default off
-    fontMemTgl.checked   = getPref(KEYS.FONT_MEM)   !== false; // default on
+    windowMemTgl.checked = getPref(KEYS.WINDOW_MEM) !== false;
+    corsMemTgl.checked   = getPref(KEYS.CORS_MEM)   === true;
+    fontMemTgl.checked   = getPref(KEYS.FONT_MEM)   !== false;
   }
 }
 
@@ -60,15 +60,13 @@ export function isAppSettingsOpen() {
 
 // ── Module init ───────────────────────────────────────────────────────────────
 export function initAppSettings() {
-  // Hide the entire DESKTOP section in web mode
+  // Hide Tauri-only rows in web mode
   if (!window.__TAURI__) {
     document.querySelectorAll('.as-tauri-only').forEach(el => { el.style.display = 'none'; });
   }
 
-  // Gear button → open modal
   appGearBtn.addEventListener('click', openAppSettings);
 
-  // Close: button + backdrop click (only if mousedown also started on overlay)
   closeBtn.addEventListener('click', closeAppSettings);
   overlay.addEventListener('mousedown', e => {
     _mouseDownOnOverlay = (e.target === overlay);
@@ -78,19 +76,17 @@ export function initAppSettings() {
     _mouseDownOnOverlay = false;
   });
 
-  // Suppress browser context menu inside the modal
   modal.addEventListener('contextmenu', e => e.preventDefault());
 
   // ── History retention days ────────────────────────────────────────────────────
   histDaysInput.addEventListener('change', () => {
     let v = parseInt(histDaysInput.value, 10);
-    if (isNaN(v) || v < 1)  v = 1;
-    if (v > 28)              v = 28;
+    if (isNaN(v) || v < 1) v = 1;
+    if (v > 28)             v = 28;
     histDaysInput.value = v;
     setPref(KEYS.HIST_DAYS, v);
     notif('History: keep ' + v + ' day' + (v === 1 ? '' : 's'));
   });
-  // Prevent the number input's arrow keys from firing video seek shortcuts
   histDaysInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') histDaysInput.blur();
     e.stopPropagation();
@@ -104,7 +100,7 @@ export function initAppSettings() {
     if (!visible) notif('Shortcuts available in Help  (?  button)');
   });
 
-  // ── Tauri-only: pref-save now, runtime wiring in later rounds ────────────────
+  // ── Tauri-only prefs ──────────────────────────────────────────────────────────
   if (window.__TAURI__) {
     windowMemTgl.addEventListener('change', () => {
       setPref(KEYS.WINDOW_MEM, windowMemTgl.checked);
@@ -112,6 +108,9 @@ export function initAppSettings() {
     });
     corsMemTgl.addEventListener('change', () => {
       setPref(KEYS.CORS_MEM, corsMemTgl.checked);
+      // If memory is turned off, clear the saved state so the proxy does not
+      // auto-restore on next boot.
+      if (!corsMemTgl.checked) removePref(KEYS.CORS_STATE);
     });
     fontMemTgl.addEventListener('change', () => {
       setPref(KEYS.FONT_MEM, fontMemTgl.checked);

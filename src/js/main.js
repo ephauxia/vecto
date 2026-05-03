@@ -23,35 +23,34 @@ import { initHelp, openHelpModal,
          closeHelpModal, isHelpOpen }             from './help.js';
 import { initAppSettings, openAppSettings,
          closeAppSettings, isAppSettingsOpen }    from './appsettings.js';
+import { initCors }                               from './cors.js';
 
 // ── DOM refs used only in main.js ─────────────────────────────────────────────
-const video       = document.getElementById('video');
-const urlInput    = document.getElementById('url-input');
-const urlAdd      = document.getElementById('url-add');
-const playerWrap  = document.getElementById('player-wrap');
-const dropOverlay = document.getElementById('drop-overlay');
-const subSetPanel = document.getElementById('sub-settings-panel');
-const subBtn      = document.getElementById('sub-btn');
-const speedMenu   = document.getElementById('speed-menu');
-const speedDialog = document.getElementById('speed-dialog');
+const video         = document.getElementById('video');
+const urlInput      = document.getElementById('url-input');
+const urlAdd        = document.getElementById('url-add');
+const playerWrap    = document.getElementById('player-wrap');
+const dropOverlay   = document.getElementById('drop-overlay');
+const subSetPanel   = document.getElementById('sub-settings-panel');
+const subBtn        = document.getElementById('sub-btn');
+const speedMenu     = document.getElementById('speed-menu');
+const speedDialog   = document.getElementById('speed-dialog');
 const settingsPanel = document.getElementById('settings-panel');
-const histOverlay = document.getElementById('history-overlay');
-const notifEl     = document.getElementById('notif');
-const queueBtn    = document.getElementById('queue-btn');
-const tempBadge   = document.getElementById('temp-badge');
+const histOverlay   = document.getElementById('history-overlay');
+const corsWarnOverlay = document.getElementById('cors-warn-overlay');
+const notifEl       = document.getElementById('notif');
+const queueBtn      = document.getElementById('queue-btn');
+const tempBadge     = document.getElementById('temp-badge');
 
 // ── Modal guard ───────────────────────────────────────────────────────────────
-// Returns true if any overlay modal is currently open.
-// Keyboard shortcuts are suppressed while any modal is open (except Escape).
 const _anyModalOpen = () =>
-  histOverlay.classList.contains('open') ||
-  isHelpOpen()                           ||
+  histOverlay.classList.contains('open')      ||
+  corsWarnOverlay.classList.contains('open')  ||
+  isHelpOpen()                                ||
   isAppSettingsOpen();
-  // Round 2: || corsWarningOverlay.classList.contains('open')
   // Round 3: || authOverlay.classList.contains('open')
 
 // ── Cross-module callback wiring ──────────────────────────────────────────────
-// Done before any init call so callbacks are in place before any event fires.
 setPlayerCallbacks({ playIndex, destroyEngines, resetPlayerUI });
 setHistoryCallbacks({ handleUrl });
 
@@ -60,7 +59,6 @@ export async function handleUrl(raw) {
   const url = raw.trim();
   if (!url) return;
 
-  // Plain M3U playlist (not M3U8 stream) — fetch and parse
   if (/\.m3u($|\?)/i.test(url) && !/\.m3u8($|\?)/i.test(url)) {
     try {
       const res   = await fetch(url);
@@ -82,9 +80,9 @@ export async function handleUrl(raw) {
 async function handleFileList(files) {
   const m3u = [], vid = [], subs = [];
   for (const f of files) {
-    if      (/\.(m3u|m3u8)$/i.test(f.name))    m3u.push(f);
+    if      (/\.(m3u|m3u8)$/i.test(f.name))        m3u.push(f);
     else if (/\.(vtt|srt|ass|ssa)$/i.test(f.name)) subs.push(f);
-    else                                         vid.push(f);
+    else                                             vid.push(f);
   }
 
   for (const f of m3u) {
@@ -93,7 +91,6 @@ async function handleFileList(files) {
   }
 
   if (vid.length) {
-    // Detect a cover art image in the same dropped batch
     let batchCoverFile = null;
     for (const f of files) {
       if (/^(cover|album|folder|art|front|back)\./i.test(f.name) &&
@@ -144,7 +141,7 @@ async function handleTauriPaths(paths, autoPlay = false) {
 
   for (const p of paths) {
     const name = p.split(/[\\/]/).pop();
-    if      (/\.(m3u|m3u8)$/i.test(name))   m3u.push(p);
+    if      (/\.(m3u|m3u8)$/i.test(name))        m3u.push(p);
     else if (/\.(vtt|srt|ass|ssa)$/i.test(name)) subs.push(p);
     else if (/^(cover|album|folder|art|front|back)\./i.test(name) &&
              /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(name)) batchCoverPath = p;
@@ -272,17 +269,16 @@ document.addEventListener('keydown', async e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key !== 'Escape' && _anyModalOpen()) return;
 
-  // Escape — close modals/panels in priority order
   if (e.key === 'Escape') {
-    if (isHelpOpen())                             { closeHelpModal();       e.preventDefault(); return; }
-    if (isAppSettingsOpen())                      { closeAppSettings();     e.preventDefault(); return; }
-    if (histOverlay.classList.contains('open'))   { closeHistoryModal();    e.preventDefault(); return; }
-    if (speedDialog.classList.contains('open'))   { closeSpeedDialog();     e.preventDefault(); return; }
-    if (settingsPanel.classList.contains('open')) { closeSettings();        e.preventDefault(); }
+    if (isHelpOpen())                                  { closeHelpModal();      e.preventDefault(); return; }
+    if (isAppSettingsOpen())                           { closeAppSettings();    e.preventDefault(); return; }
+    if (corsWarnOverlay.classList.contains('open'))    { corsWarnOverlay.classList.remove('open'); e.preventDefault(); return; }
+    if (histOverlay.classList.contains('open'))        { closeHistoryModal();   e.preventDefault(); return; }
+    if (speedDialog.classList.contains('open'))        { closeSpeedDialog();    e.preventDefault(); return; }
+    if (settingsPanel.classList.contains('open'))      { closeSettings();       e.preventDefault(); }
     return;
   }
 
-  // Space — play/pause or hold for 2× temp speed
   if (e.code === 'Space' && !e.repeat) {
     e.preventDefault();
     state.spaceDown   = true;
@@ -301,7 +297,6 @@ document.addEventListener('keydown', async e => {
   }
   if (e.code === 'Space' && e.repeat) { e.preventDefault(); return; }
 
-  // Suppress repeat on non-repeatable keys
   const noRepeat = ['s','g','r','k','m','f','c','n','p','home','end'];
   if (e.repeat && noRepeat.includes(e.key.toLowerCase())) return;
 
@@ -450,6 +445,7 @@ document.addEventListener('keyup', e => {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 initHelp();
 initAppSettings();
+initCors();
 initSubtitles();
 initQueue();
 initPlayer();

@@ -468,6 +468,42 @@ th { position: relative; }
 .mq-inner.mq-on { animation: vecto-mq var(--mq-dur, 12s) ease-in-out infinite alternate; }
 @keyframes vecto-mq { 0%, 20% { transform: translateX(0); } 80%, 100% { transform: translateX(var(--mq-dist, 0px)); } }
 
+/* ── CORS BUTTON (header) ─────────────────────────────────────────────────── */
+#cors-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: .12em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all .15s;
+}
+#cors-btn:hover { color: var(--text); border-color: var(--muted); }
+#cors-btn.btn-cors-on {
+  background: rgba(224,85,85,.12);
+  color: var(--red);
+  border-color: var(--red);
+}
+#cors-btn.btn-cors-on:hover { background: rgba(224,85,85,.2); }
+
+/* ── CORS WARNING MODAL ───────────────────────────────────────────────────── */
+#cors-warn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 110; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#cors-warn-overlay.open { opacity: 1; pointer-events: auto; }
+#cors-warn-modal { background: var(--surface); border: 1px solid var(--red); border-radius: 8px; width: min(400px, 92vw); display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,.9); transform: scale(.97); transition: transform .2s; overflow: hidden; }
+#cors-warn-overlay.open #cors-warn-modal { transform: scale(1); }
+#cors-warn-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 9px; background: rgba(224,85,85,.08); border-bottom: 1px solid rgba(224,85,85,.25); flex-shrink: 0; }
+.cors-warn-title { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .18em; color: var(--red); }
+.cors-warn-help-btn { font-family: var(--font-display); font-weight: 700; font-size: 11px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(224,85,85,.4); color: rgba(224,85,85,.7); display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+.cors-warn-help-btn:hover { color: var(--red); border-color: var(--red); }
+#cors-warn-body { padding: 16px 16px 10px; display: flex; flex-direction: column; gap: 10px; }
+#cors-warn-body p { font-size: 12px; color: var(--text); line-height: 1.6; }
+.cors-warn-skip-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); cursor: pointer; padding-top: 4px; }
+.cors-warn-skip-row input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: var(--red); }
+#cors-warn-foot { display: flex; gap: 8px; padding: 10px 16px 14px; justify-content: flex-end; }
+
 /* ── APP GEAR BUTTON (header) ─────────────────────────────────────────────── */
 #app-gear-btn { font-size: 14px; width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; line-height: 1; }
 #app-gear-btn:hover { color: var(--text); border-color: var(--muted); }
