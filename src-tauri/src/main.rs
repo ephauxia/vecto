@@ -3,6 +3,11 @@
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
+#[cfg(target_os = "windows")]
+extern "system" {
+    fn AllowSetForegroundWindow(dwProcessId: u32) -> i32;
+}
+
 #[tauri::command]
 fn file_exists(path: String) -> bool {
     std::path::Path::new(&path).exists()
@@ -12,11 +17,10 @@ fn file_exists(path: String) -> bool {
 fn reveal_in_explorer(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        unsafe { AllowSetForegroundWindow(0xFFFFFFFF); } // ASFW_ANY — let Explorer foreground itself
         let win_path = path.replace('/', "\\");
-        std::process::Command::new("cmd")
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW — suppress cmd flash
-            .arg("/c")
-            .arg(format!("start \"\" explorer.exe /select,\"{}\"", win_path))
+        std::process::Command::new("explorer.exe")
+            .raw_arg(format!("/select,\"{}\"", win_path))
             .spawn()
             .map_err(|e| e.to_string())?;
     }
