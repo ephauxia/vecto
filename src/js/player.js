@@ -17,7 +17,7 @@ import { state, fmt, escHtml,
 import { notif, closeAllPanels }                       from './ui.js';
 import { savePosition, getSaved, clearSaved,
          loadHistRaw, saveHistRaw,
-         HIST_DAYS, HIST_MAX }                         from './settings.js';
+         getHistDays, HIST_MAX }                         from './settings.js';
 import { loadItemSubtitles }                           from './subtitles.js';
 import { renderPlaylist, renderFsQueue,
          revokeItemSubs, hideResumeBar,
@@ -176,7 +176,7 @@ export function saveToHistory(item) {
       filePath:  item.filePath || null,
     });
   }
-  const cutoff = now - HIST_DAYS * 86400000;
+  const cutoff = now - getHistDays() * 86400000;
   saveHistRaw(hist.filter(h => h.lastPlayed >= cutoff).slice(-HIST_MAX));
 }
 

@@ -21,6 +21,8 @@ import { initSubtitles, setSubEnabled,
 import { toggleFsQueue }                          from './queue.js';
 import { initHelp, openHelpModal,
          closeHelpModal, isHelpOpen }             from './help.js';
+import { initAppSettings, openAppSettings,
+         closeAppSettings, isAppSettingsOpen }    from './appsettings.js';
 
 // ── DOM refs used only in main.js ─────────────────────────────────────────────
 const video       = document.getElementById('video');
@@ -40,11 +42,11 @@ const tempBadge   = document.getElementById('temp-badge');
 
 // ── Modal guard ───────────────────────────────────────────────────────────────
 // Returns true if any overlay modal is currently open.
-// Append new modals here as they are built in later rounds.
+// Keyboard shortcuts are suppressed while any modal is open (except Escape).
 const _anyModalOpen = () =>
   histOverlay.classList.contains('open') ||
-  isHelpOpen();
-  // Round 2: || appSettingsOverlay.classList.contains('open')
+  isHelpOpen()                           ||
+  isAppSettingsOpen();
   // Round 2: || corsWarningOverlay.classList.contains('open')
   // Round 3: || authOverlay.classList.contains('open')
 
@@ -272,10 +274,11 @@ document.addEventListener('keydown', async e => {
 
   // Escape — close modals/panels in priority order
   if (e.key === 'Escape') {
-    if (isHelpOpen())                             { closeHelpModal();     e.preventDefault(); return; }
-    if (histOverlay.classList.contains('open'))   { closeHistoryModal();  e.preventDefault(); return; }
-    if (speedDialog.classList.contains('open'))   { closeSpeedDialog();   e.preventDefault(); return; }
-    if (settingsPanel.classList.contains('open')) { closeSettings();      e.preventDefault(); }
+    if (isHelpOpen())                             { closeHelpModal();       e.preventDefault(); return; }
+    if (isAppSettingsOpen())                      { closeAppSettings();     e.preventDefault(); return; }
+    if (histOverlay.classList.contains('open'))   { closeHistoryModal();    e.preventDefault(); return; }
+    if (speedDialog.classList.contains('open'))   { closeSpeedDialog();     e.preventDefault(); return; }
+    if (settingsPanel.classList.contains('open')) { closeSettings();        e.preventDefault(); }
     return;
   }
 
@@ -446,6 +449,7 @@ document.addEventListener('keyup', e => {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 initHelp();
+initAppSettings();
 initSubtitles();
 initQueue();
 initPlayer();

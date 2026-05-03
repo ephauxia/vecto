@@ -13,6 +13,12 @@ export const KEYS = {
   RESUME_PREFIX:   'vecto_r_',       // resume keys are RESUME_PREFIX + item.resumeKey
   HIST_COL_WIDTHS: 'vecto_hist_col_widths',
   SHORTCUT_PREFS:  'vecto_shortcut_prefs',
+  // ── Round 2 ────────────────────────────────────────────────────────────────
+  HIST_DAYS:       'vecto_hist_days',    // number 1–28; fallback: HIST_DAYS constant
+  SC_BAR_HIDDEN:   'vecto_sc_bar_hidden',// boolean; true = shortcut bar hidden
+  WINDOW_MEM:      'vecto_window_mem',   // boolean; true = remember window size (Tauri)
+  CORS_MEM:        'vecto_cors_mem',     // boolean; true = remember CORS bypass state (Tauri)
+  FONT_MEM:        'vecto_font_mem',     // boolean; true = remember subtitle font (Tauri)
 };
 
 // ── Generic get / set / remove ────────────────────────────────────────────────
@@ -92,8 +98,19 @@ export function saveSubConfig(subState) {
 
 // ── Playback history ──────────────────────────────────────────────────────────
 
-export const HIST_DAYS = 5;    // entries older than this are pruned on write
+export const HIST_DAYS = 5;    // fallback default; overridden at runtime by getHistDays()
 export const HIST_MAX  = 500;  // hard cap on stored entries
+
+/**
+ * Return the effective history retention window in days.
+ * Reads the user-set value from localStorage; falls back to HIST_DAYS constant.
+ * Always call this at write time rather than caching the result, so changes
+ * made in App Settings take effect on the next history write without a reload.
+ */
+export function getHistDays() {
+  const v = getPref(KEYS.HIST_DAYS);
+  return (typeof v === 'number' && v >= 1 && v <= 28) ? v : HIST_DAYS;
+}
 
 /**
  * Load the raw history array from localStorage.

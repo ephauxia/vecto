@@ -467,3 +467,29 @@ th { position: relative; }
 .mq-inner { display: inline-block; white-space: nowrap; }
 .mq-inner.mq-on { animation: vecto-mq var(--mq-dur, 12s) ease-in-out infinite alternate; }
 @keyframes vecto-mq { 0%, 20% { transform: translateX(0); } 80%, 100% { transform: translateX(var(--mq-dist, 0px)); } }
+
+/* ── APP GEAR BUTTON (header) ─────────────────────────────────────────────── */
+#app-gear-btn { font-size: 14px; width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; line-height: 1; }
+#app-gear-btn:hover { color: var(--text); border-color: var(--muted); }
+
+/* ── APP SETTINGS MODAL ───────────────────────────────────────────────────── */
+#app-settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#app-settings-overlay.open { opacity: 1; pointer-events: auto; }
+#app-settings-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: min(400px, 92vw); display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,.85); transform: scale(.97); transition: transform .2s; overflow: hidden; }
+#app-settings-overlay.open #app-settings-modal { transform: scale(1); }
+#as-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 9px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.as-title { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .18em; color: var(--accent); }
+#as-body { padding: 4px 0 10px; }
+.as-section { padding: 10px 0 2px; }
+.as-section + .as-section { border-top: 1px solid var(--border); margin-top: 2px; }
+.as-section-label { font-size: 9px; letter-spacing: .16em; color: var(--muted); padding: 2px 16px 8px; font-family: var(--font-display); font-weight: 700; }
+.as-desktop-tag { background: var(--surface2); border: 1px solid var(--border); color: var(--border); font-size: 8px; letter-spacing: .06em; padding: 1px 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; font-family: var(--font-display); }
+.as-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; gap: 16px; }
+.as-label { font-size: 12px; color: var(--text); }
+.as-sublabel { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.as-input-unit { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.as-input-unit input[type=number] { width: 50px; padding: 4px 8px; font-size: 13px; font-family: var(--font-mono); text-align: center; border-radius: 3px; }
+.as-unit { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ── SHORTCUT BAR FORCE HIDDEN ────────────────────────────────────────────── */
+#shortcut-bar.sc-force-hidden { display: none !important; }
