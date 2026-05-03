@@ -13,8 +13,10 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let win_path = path.replace('/', "\\");
-        std::process::Command::new("explorer.exe")
-            .raw_arg(format!("/select,\"{}\"", win_path))
+        std::process::Command::new("cmd")
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW — suppress cmd flash
+            .arg("/c")
+            .arg(format!("start \"\" explorer.exe /select,\"{}\"", win_path))
             .spawn()
             .map_err(|e| e.to_string())?;
     }
