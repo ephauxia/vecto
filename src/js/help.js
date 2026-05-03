@@ -80,6 +80,10 @@ export function renderShortcutBar() {
 
   const anyVisible = SHORTCUTS.some(s => prefs[s.id]);
   shortcutBar.classList.toggle('sc-collapsed', !anyVisible);
+
+  requestAnimationFrame(() => {
+    shortcutBar.classList.toggle('sc-overflows', scChips.scrollWidth > scChips.clientWidth);
+  });
 }
 
 // ── Edit mode ─────────────────────────────────────────────────────────────────
@@ -141,6 +145,8 @@ export function isHelpOpen() {
 }
 
 function _activateSection(sectionId) {
+  document.getElementById('help-modal').dataset.section = sectionId;
+
   helpNavBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.section === sectionId);
   });
@@ -192,4 +198,8 @@ export function initHelp() {
   document.addEventListener('click', e => {
     if (_scEditing && !shortcutBar.contains(e.target)) exitEditMode();
   });
+
+  new ResizeObserver(() => {
+    shortcutBar.classList.toggle('sc-overflows', scChips.scrollWidth > scChips.clientWidth);
+  }).observe(scChips);
 }

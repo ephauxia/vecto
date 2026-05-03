@@ -283,31 +283,38 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 #resume-no:hover { color: var(--text); border-color: var(--muted); }
 
 /* ── SHORTCUT BAR ─────────────────────────────────────────────────────────── */
-#shortcut-bar { display: flex; align-items: center; gap: 0; padding: 4px 14px; background: var(--surface); border-top: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; transition: height .2s ease, padding .2s ease; }
-#shortcut-bar::-webkit-scrollbar { display: none; }
-#sc-chips { display: flex; gap: 12px; flex: 1; align-items: center; overflow: hidden; }
+#shortcut-bar { display: flex; align-items: center; padding: 4px 0 4px 14px; background: var(--surface); border-top: 1px solid var(--border); overflow: hidden; flex-shrink: 0; transition: height .2s ease, padding .2s ease; }
+#sc-chips { display: flex; gap: 12px; flex: 1; align-items: center; overflow-x: auto; min-width: 0; }
+#sc-chips::-webkit-scrollbar { display: none; }
 .sc-item { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .sc-item.sc-hidden { display: none; }
 .sc-key { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); font-size: 9.5px; padding: 1px 5px; border-radius: 3px; letter-spacing: .05em; white-space: nowrap; }
 .sc-label { color: var(--border); font-size: 9.5px; letter-spacing: .05em; white-space: nowrap; }
 
+/* Fade — only when chips overflow */
+#shortcut-bar.sc-overflows #sc-chips {
+  -webkit-mask-image: linear-gradient(to right, black 70%, transparent 98%);
+  mask-image: linear-gradient(to right, black 70%, transparent 98%);
+}
+
 /* Edit mode — chips become toggle buttons */
+#shortcut-bar.sc-editing #sc-chips { -webkit-mask-image: none; mask-image: none; }
 #shortcut-bar.sc-editing .sc-item { display: flex; cursor: pointer; padding: 1px 4px; border-radius: 3px; border: 1px solid var(--border); transition: background .1s, border-color .1s; }
 #shortcut-bar.sc-editing .sc-item:hover { background: var(--surface2); border-color: var(--muted); }
 #shortcut-bar.sc-editing .sc-item.sc-off { opacity: .38; }
 #shortcut-bar.sc-editing .sc-item.sc-off .sc-key { color: var(--muted); }
 #shortcut-bar.sc-editing .sc-item.sc-off .sc-label { color: var(--border); }
 
-/* Collapsed bar — all chips hidden, bar shrinks; hover reveals it slightly */
+/* Collapsed bar */
 #shortcut-bar.sc-collapsed { height: 6px; padding-top: 0; padding-bottom: 0; overflow: hidden; }
 #shortcut-bar.sc-collapsed:hover { height: 26px; padding-top: 4px; padding-bottom: 4px; overflow: visible; }
 #shortcut-bar.sc-collapsed #sc-chips { visibility: hidden; }
 #shortcut-bar.sc-collapsed:hover #sc-chips { visibility: visible; }
 
-/* Edit button */
-#sc-edit-btn { margin-left: 8px; flex-shrink: 0; color: var(--muted); font-size: 11px; padding: 2px 6px; border-radius: 3px; border: 1px solid transparent; transition: all .15s; line-height: 1; }
-#sc-edit-btn:hover { color: var(--text); border-color: var(--border); }
-#shortcut-bar.sc-editing #sc-edit-btn { color: var(--accent); border-color: var(--accent-dim); }
+/* Edit button — always fixed at end, separated by a pipe */
+#sc-edit-btn { flex-shrink: 0; margin-left: auto; padding: 0 12px; height: 100%; display: flex; align-items: center; color: var(--muted); font-size: 11px; border-left: 1px solid var(--border); transition: color .15s; line-height: 1; cursor: pointer; background: none; border-top: none; border-right: none; border-bottom: none; border-radius: 0; }
+#sc-edit-btn:hover { color: var(--text); }
+#shortcut-bar.sc-editing #sc-edit-btn { color: var(--accent); border-left-color: var(--accent-dim); }
 
 /* ── HELP BUTTON ──────────────────────────────────────────────────────────── */
 #help-btn { font-family: var(--font-display); font-weight: 700; font-size: 12px; width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; line-height: 1; }
@@ -316,7 +323,9 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 /* ── HELP MODAL ───────────────────────────────────────────────────────────── */
 #help-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.78); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
 #help-overlay.open { opacity: 1; pointer-events: auto; }
-#help-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: min(780px, 92vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,.85); transform: scale(.97); transition: transform .2s; overflow: hidden; }
+#help-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: min(780px, 92vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,.85); transform: scale(.97); transition: transform .2s, width .2s ease; overflow: hidden; }
+#help-modal[data-section="telegram"],
+#help-modal[data-section="cors"] { width: min(540px, 92vw); }
 #help-overlay.open #help-modal { transform: scale(1); }
 #help-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 9px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .help-head-title { font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .18em; color: var(--accent); }
@@ -324,10 +333,10 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .help-nav-btn { font-family: var(--font-display); font-weight: 600; font-size: 10px; letter-spacing: .1em; padding: 5px 14px 6px; border-radius: 4px 4px 0 0; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all .15s; position: relative; bottom: -1px; }
 .help-nav-btn:hover { color: var(--text); background: var(--surface2); }
 .help-nav-btn.active { color: var(--accent); background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); }
-#help-body { flex: 1; overflow: hidden; min-height: 0; }
-.help-section { display: none; height: 100%; overflow-y: auto; padding: 20px 24px; }
+#help-body { flex: 1; overflow-y: auto; min-height: 0; }
+#help-body::-webkit-scrollbar { width: 3px; }
+.help-section { display: none; padding: 20px 24px; }
 .help-section.active { display: block; }
-.help-section::-webkit-scrollbar { width: 3px; }
 
 /* Shortcuts grid */
 .help-sc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px 32px; }

@@ -38,6 +38,16 @@ const notifEl     = document.getElementById('notif');
 const queueBtn    = document.getElementById('queue-btn');
 const tempBadge   = document.getElementById('temp-badge');
 
+// ── Modal guard ───────────────────────────────────────────────────────────────
+// Returns true if any overlay modal is currently open.
+// Append new modals here as they are built in later rounds.
+const _anyModalOpen = () =>
+  histOverlay.classList.contains('open') ||
+  isHelpOpen();
+  // Round 2: || appSettingsOverlay.classList.contains('open')
+  // Round 2: || corsWarningOverlay.classList.contains('open')
+  // Round 3: || authOverlay.classList.contains('open')
+
 // ── Cross-module callback wiring ──────────────────────────────────────────────
 // Done before any init call so callbacks are in place before any event fires.
 setPlayerCallbacks({ playIndex, destroyEngines, resetPlayerUI });
@@ -258,6 +268,7 @@ speedMenu.addEventListener('click', e => e.stopPropagation());
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', async e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key !== 'Escape' && _anyModalOpen()) return;
 
   // Escape — close modals/panels in priority order
   if (e.key === 'Escape') {
