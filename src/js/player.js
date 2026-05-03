@@ -72,6 +72,7 @@ let _resumeItem   = null;  // item pending loadedmetadata before resume bar show
 let _hideArtTimer = null;
 let _pendingSeekRatio = null;
 let _isDraggingProg   = false;
+let _dragRatio        = 0;      
 
 // ── Engine management ─────────────────────────────────────────────────────────
 export function destroyEngines() {
@@ -540,6 +541,16 @@ function _ratioFromEvent(e) {
   return (e.clientX - rect.left) / rect.width;
 }
 
+function _updateProgVisual(r) {
+  const clamped = Math.max(0, Math.min(1, r));
+  const pct     = (clamped * 100).toFixed(2);
+  progFill.style.width = pct + '%';
+  progDot.style.left   = pct + '%';
+  if (isFinite(video.duration)) {
+    timeEl.textContent = fmt(clamped * video.duration) + ' / ' + fmt(video.duration);
+  }
+}
+
 // ── Module initialisation ─────────────────────────────────────────────────────
 export function initPlayer() {
 
@@ -555,6 +566,7 @@ export function initPlayer() {
   });
   video.addEventListener('timeupdate', () => {
     if (state.currentIdx < 0) return;
+    if (_isDraggingProg) return;
     const d = video.duration;
     if (!isFinite(d)) return;
     const pct = (video.currentTime / d * 100).toFixed(2);
@@ -663,9 +675,21 @@ export function initPlayer() {
   });
 
   // ── Progress bar ─────────────────────────────────────────────────────────────
-  progressWrap.addEventListener('mousedown', e => { _isDraggingProg = true; _seekToRatio(_ratioFromEvent(e)); });
-  document.addEventListener('mousemove',     e => { if (_isDraggingProg) _seekToRatio(_ratioFromEvent(e)); });
-  document.addEventListener('mouseup',       () => { _isDraggingProg = false; });
+  progressWrap.addEventListener('mousedown', e => {
+    _isDraggingProg = true;
+    _dragRatio = _ratioFromEvent(e);
+    _updateProgVisual(_dragRatio);
+  });
+  document.addEventListener('mousemove', e => {
+    if (!_isDraggingProg) return;
+    _dragRatio = _ratioFromEvent(e);
+    _updateProgVisual(_dragRatio);
+  });
+  document.addEventListener('mouseup', () => {
+    if (!_isDraggingProg) return;
+    _isDraggingProg = false;
+    _seekToRatio(_dragRatio);
+  });
   progressWrap.addEventListener('click',     e => _seekToRatio(_ratioFromEvent(e)));
   progressWrap.addEventListener('touchstart', e => {
     _isDraggingProg = true;
