@@ -20,7 +20,6 @@ const closeBtn      = document.getElementById('as-close-btn');
 const appGearBtn    = document.getElementById('app-gear-btn');
 const histDaysInput = document.getElementById('as-hist-days');
 const scBarToggle   = document.getElementById('as-sc-bar-toggle');
-const corsMemTgl    = document.getElementById('as-cors-mem-toggle');
 const fontMemTgl    = document.getElementById('as-font-mem-toggle');
 const shortcutBar   = document.getElementById('shortcut-bar');
 const corsToggleEl  = document.getElementById('as-cors-toggle');
