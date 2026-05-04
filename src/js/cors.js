@@ -53,8 +53,8 @@ export function wrapUrl(url) {
   if (!_enabled || !_proxyPort || !url) return url;
   if (url.startsWith('blob:') ||
       /asset\.localhost/i.test(url) ||
-      url.startsWith(`http://127.0.0.1:${_proxyPort}`)) return url;
-  return `http://127.0.0.1:${_proxyPort}/proxy?url=${encodeURIComponent(url)}`;
+      url.startsWith(`http://localhost:${_proxyPort}`)) return url;
+  return `http://localhost:${_proxyPort}/proxy?url=${encodeURIComponent(url)}`;
 }
 
 /**
@@ -80,8 +80,6 @@ async function _enable() {
     return;
   }
   _enabled = true;
-  corsBtn.classList.add('btn-cors-on');
-  corsBtn.title = 'CORS Bypass: ON — click to disable';
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, true);
   notif('CORS Bypass enabled');
   _syncToggleEl(true);
@@ -95,8 +93,6 @@ async function _disable() {
   }
   _enabled   = false;
   _proxyPort = null;
-  corsBtn.classList.remove('btn-cors-on');
-  corsBtn.title = 'CORS Bypass: OFF — click to enable';
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, false);
   notif('CORS Bypass disabled');
   _syncToggleEl(false);
