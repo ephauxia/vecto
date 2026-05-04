@@ -36,7 +36,7 @@ jobs:
         working-directory: src-tauri
 
       - name: Build app
-        run: cargo tauri build
+        run: cargo tauri build --debug
         working-directory: src-tauri
 
       - name: Upload installer
