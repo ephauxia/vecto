@@ -44,8 +44,8 @@ jobs:
         with:
           name: VECTO-installer
           path: |
-            src-tauri/target/release/debug/bundle/msi/*.msi
-            src-tauri/target/release/debug/bundle/nsis/*.exe
+            src-tauri/target/debug/bundle/msi/*.msi
+            src-tauri/target/debug/bundle/nsis/*.exe
           retention-days: 30
 
   build-linux:
