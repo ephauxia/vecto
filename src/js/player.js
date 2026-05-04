@@ -871,4 +871,8 @@ export function initPlayer() {
       window.__TAURI__.window.getCurrentWindow().show().catch(console.error);
     }, 50);
   }
+
+  window._vectoReloadCurrentSrc = () => {
+  if (state.currentIdx >= 0) loadSrc(state.playlist[state.currentIdx].url);
+};
 }

@@ -83,6 +83,8 @@ async function _enable() {
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, true);
   notif('CORS Bypass enabled');
   _syncToggleEl(true);
+
+  if (typeof window._vectoReloadCurrentSrc === 'function') window._vectoReloadCurrentSrc();
 }
 
 async function _disable() {
@@ -96,6 +98,8 @@ async function _disable() {
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, false);
   notif('CORS Bypass disabled');
   _syncToggleEl(false);
+
+  if (typeof window._vectoReloadCurrentSrc === 'function') window._vectoReloadCurrentSrc();
 }
 
 // ── Warning modal ─────────────────────────────────────────────────────────────
