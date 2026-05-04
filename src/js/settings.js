@@ -1,10 +1,6 @@
 // ── VECTO / settings.js ───────────────────────────────────────────────────────
-// Round 0 persistence layer.
-// Pure data — no DOM access, no notif(), no imports from other app modules.
-// Every module that reads or writes localStorage goes through this file.
-// Callers own any UI feedback (notif, syncUI, etc.) that follows a read/write.
+// Pure persistence layer — no DOM, no notif(), no app module imports.
 
-// ── Storage key registry ──────────────────────────────────────────────────────
 export const KEYS = {
   SUB_CFG:         'vecto_sub_cfg',
   HIST:            'vecto_hist',
@@ -70,12 +66,12 @@ export function saveSubConfig(subState) {
 
 // ── Playback history ──────────────────────────────────────────────────────────
 
-export const HIST_DAYS = 5;
+export const HIST_DAYS = 5;   // fallback constant
 export const HIST_MAX  = 500;
 
 /**
  * Return the effective history retention window in days.
- * Always call at write time — changes in App Settings take effect immediately.
+ * Always call at write time so App Settings changes take effect immediately.
  */
 export function getHistDays() {
   const v = getPref(KEYS.HIST_DAYS);

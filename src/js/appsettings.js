@@ -1,19 +1,17 @@
 // ── VECTO / appsettings.js ────────────────────────────────────────────────────
-// App Settings modal — opened via the gear icon at the far-right of the header.
+// App Settings modal — opened via the ⚙ icon at the far-right of the header.
 //
-// Fully working this round:
-//   • History retention days (overrides HIST_DAYS constant at runtime)
+// Fully wired this round:
+//   • History retention days  (getHistDays() reads this at every history write)
 //   • Shortcut bar show/hide
-//
-// Pref-save only this round (runtime wiring in later rounds):
-//   • Remember window size   (Round 3 — Tauri window-state plugin)
-//   • Remember CORS state    (cors.js reads CORS_MEM/CORS_STATE on boot)
-//   • Remember subtitle font (Round 2 font overhaul — separate session)
+//   • Tauri-only session prefs: window size, CORS memory, subtitle font memory
 //
 // Exports: initAppSettings, openAppSettings, closeAppSettings, isAppSettingsOpen
 
 import { getPref, setPref, removePref, KEYS, HIST_DAYS } from './settings.js';
-import { notif }                                           from './ui.js';
+import { notif, modalManager }                             from './ui.js';
+import { toggleCors, isCorsEnabled } from './cors.js';
+import { openHelpModal }              from './help.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const overlay       = document.getElementById('app-settings-overlay');
@@ -22,58 +20,57 @@ const closeBtn      = document.getElementById('as-close-btn');
 const appGearBtn    = document.getElementById('app-gear-btn');
 const histDaysInput = document.getElementById('as-hist-days');
 const scBarToggle   = document.getElementById('as-sc-bar-toggle');
-const windowMemTgl  = document.getElementById('as-window-mem-toggle');
 const corsMemTgl    = document.getElementById('as-cors-mem-toggle');
 const fontMemTgl    = document.getElementById('as-font-mem-toggle');
 const shortcutBar   = document.getElementById('shortcut-bar');
-
-// ── Module-local state ────────────────────────────────────────────────────────
-let _mouseDownOnOverlay = false;
+const corsToggleEl  = document.getElementById('as-cors-toggle');
+const corsMemTgl    = document.getElementById('as-cors-mem-toggle');
+const corsHelpBtn   = document.getElementById('as-cors-help-btn');
 
 // ── Populate controls from saved prefs ───────────────────────────────────────
 function _loadIntoUI() {
   const days = getPref(KEYS.HIST_DAYS);
-  histDaysInput.value = (typeof days === 'number' && days >= 1 && days <= 28) ? days : HIST_DAYS;
+  histDaysInput.value = (typeof days === 'number' && days >= 1 && days <= 28)
+    ? days : HIST_DAYS;
 
   scBarToggle.checked = getPref(KEYS.SC_BAR_HIDDEN) !== true;
 
   if (window.__TAURI__) {
-    windowMemTgl.checked = getPref(KEYS.WINDOW_MEM) !== false;
-    corsMemTgl.checked   = getPref(KEYS.CORS_MEM)   === true;
-    fontMemTgl.checked   = getPref(KEYS.FONT_MEM)   !== false;
+    corsToggleEl.checked   = isCorsEnabled();
+    corsMemTgl.checked     = getPref(KEYS.CORS_MEM) === true;
+    fontMemTgl.checked   = getPref(KEYS.FONT_MEM)   !== false; // default on
   }
 }
 
 // ── Modal open / close ────────────────────────────────────────────────────────
 export function openAppSettings() {
   _loadIntoUI();
-  overlay.classList.add('open');
+  modalManager.open('app-settings-overlay');
 }
 
 export function closeAppSettings() {
-  overlay.classList.remove('open');
+  modalManager.close('app-settings-overlay');
 }
 
 export function isAppSettingsOpen() {
-  return overlay.classList.contains('open');
+  return modalManager.isOpen('app-settings-overlay');
 }
 
 // ── Module init ───────────────────────────────────────────────────────────────
 export function initAppSettings() {
-  // Hide Tauri-only rows in web mode
   if (!window.__TAURI__) {
     document.querySelectorAll('.as-tauri-only').forEach(el => { el.style.display = 'none'; });
   }
 
   appGearBtn.addEventListener('click', openAppSettings);
-
   closeBtn.addEventListener('click', closeAppSettings);
-  overlay.addEventListener('mousedown', e => {
-    _mouseDownOnOverlay = (e.target === overlay);
-  });
+
+  // Backdrop click
+  let _mdOnOverlay = false;
+  overlay.addEventListener('mousedown', e => { _mdOnOverlay = (e.target === overlay); });
   overlay.addEventListener('click', e => {
-    if (e.target === overlay && _mouseDownOnOverlay) closeAppSettings();
-    _mouseDownOnOverlay = false;
+    if (e.target === overlay && _mdOnOverlay) closeAppSettings();
+    _mdOnOverlay = false;
   });
 
   modal.addEventListener('contextmenu', e => e.preventDefault());
@@ -100,18 +97,28 @@ export function initAppSettings() {
     if (!visible) notif('Shortcuts available in Help  (?  button)');
   });
 
-  // ── Tauri-only prefs ──────────────────────────────────────────────────────────
+  // ── Tauri-only session prefs ──────────────────────────────────────────────────
   if (window.__TAURI__) {
-    windowMemTgl.addEventListener('change', () => {
-      setPref(KEYS.WINDOW_MEM, windowMemTgl.checked);
-      notif(windowMemTgl.checked ? 'Window size: will be remembered' : 'Window size: reset each launch');
+
+    corsToggleEl.addEventListener('change', async () => {
+      // Defer to cors.js — it handles the warning modal and all state.
+      // If the user cancels the warning, cors.js reverts the checkbox itself.
+      await toggleCors();
     });
+
+    corsHelpBtn.addEventListener('click', () => openHelpModal('cors'));
+
     corsMemTgl.addEventListener('change', () => {
       setPref(KEYS.CORS_MEM, corsMemTgl.checked);
-      // If memory is turned off, clear the saved state so the proxy does not
-      // auto-restore on next boot.
-      if (!corsMemTgl.checked) removePref(KEYS.CORS_STATE);
+      if (corsMemTgl.checked && isCorsEnabled()) {
+        // CORS is already running — write the state now so boot restore
+        // works if the window is closed before CORS is toggled again.
+        setPref(KEYS.CORS_STATE, true);
+      } else if (!corsMemTgl.checked) {
+        removePref(KEYS.CORS_STATE);
+      }
     });
+
     fontMemTgl.addEventListener('change', () => {
       setPref(KEYS.FONT_MEM, fontMemTgl.checked);
     });

@@ -1,18 +1,17 @@
 // ── VECTO / help.js ───────────────────────────────────────────────────────────
-// Help modal (Telegram setup instructions, keyboard shortcuts reference,
-// CORS bypass explanation) and shortcut bar favourites management.
+// Help modal (keyboard shortcuts, Telegram setup, CORS explanation)
+// and shortcut bar favourites management.
 //
-// The Help modal is standalone in Round 1 — no parent stacking needed.
-// Stacking support (CORS Warning → Help, Auth → Help) is implemented in
-// the modal manager upgrade scheduled for Round 2.
+// openHelpModal / closeHelpModal go through modalManager so the CORS warning
+// → Help stacking works correctly: Help sits on top of the warning in the
+// modal stack; Escape closes Help first, leaving the warning still open.
 //
-// Exports: initHelp, openHelpModal, closeHelpModal
+// Exports: initHelp, openHelpModal, closeHelpModal, isHelpOpen
 
 import { getPref, setPref, KEYS } from './settings.js';
+import { modalManager }            from './ui.js';
 
 // ── Canonical shortcut list ───────────────────────────────────────────────────
-// Single source of truth for the bar chips. The Help modal shortcuts section
-// is a static full-reference table in HTML — it does not use this array.
 const SHORTCUTS = [
   { id: 'play',        key: 'SPACE / K',  label: 'Play/Pause'   },
   { id: 'tempspeed',   key: 'HOLD SPACE', label: '2× Temp'      },
@@ -45,13 +44,11 @@ const shortcutBar  = document.getElementById('shortcut-bar');
 const helpBtn      = document.getElementById('help-btn');
 
 // ── Module-local state ────────────────────────────────────────────────────────
-let _scEditing              = false;
-let _helpMouseDownOnOverlay = false;
+let _scEditing = false;
 
 // ── Shortcut prefs helpers ────────────────────────────────────────────────────
 function loadScPrefs() {
   const saved = getPref(KEYS.SHORTCUT_PREFS);
-  // Merge with defaults so new shortcuts added in future rounds appear visible
   return saved ? { ...DEFAULT_PREFS, ...saved } : { ...DEFAULT_PREFS };
 }
 
@@ -93,14 +90,12 @@ function enterEditMode() {
   scEditBtn.textContent = '✓';
   scEditBtn.title       = 'Done';
 
-  // Show all chips; mark off-state visually
   const prefs = loadScPrefs();
   scChips.querySelectorAll('.sc-item').forEach(el => {
     el.classList.remove('sc-hidden');
     el.classList.toggle('sc-off', !prefs[el.dataset.id]);
   });
 
-  // Shrink collapsed bar back to normal height for editing
   shortcutBar.classList.remove('sc-collapsed');
 }
 
@@ -127,62 +122,58 @@ function handleChipClick(e) {
 
 // ── Help modal ────────────────────────────────────────────────────────────────
 
-/**
- * Open the help modal and navigate to a named section.
- * @param {string} sectionId  'telegram' | 'shortcuts' | 'cors'
- */
-export function openHelpModal(sectionId = 'shortcuts') {
-  _activateSection(sectionId);
-  helpOverlay.classList.add('open');
-}
-
-export function closeHelpModal() {
-  helpOverlay.classList.remove('open');
-}
-
-export function isHelpOpen() {
-  return helpOverlay.classList.contains('open');
-}
-
 function _activateSection(sectionId) {
   document.getElementById('help-modal').dataset.section = sectionId;
-
   helpNavBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.section === sectionId);
   });
   helpSections.forEach(sec => {
     sec.classList.toggle('active', sec.id === 'help-sec-' + sectionId);
   });
-  // Scroll section body to top on switch
   const activeEl = document.getElementById('help-sec-' + sectionId);
   if (activeEl) activeEl.scrollTop = 0;
   const body = document.getElementById('help-body');
   if (body) body.scrollTop = 0;
 }
 
+/**
+ * Open the help modal and navigate to a named section.
+ * Routes through modalManager so Help stacks correctly on top of CORS warning.
+ * @param {string} sectionId  'shortcuts' | 'telegram' | 'cors'
+ */
+export function openHelpModal(sectionId = 'shortcuts') {
+  _activateSection(sectionId);
+  modalManager.open('help-overlay');
+}
+
+export function closeHelpModal() {
+  modalManager.close('help-overlay');
+}
+
+export function isHelpOpen() {
+  return modalManager.isOpen('help-overlay');
+}
+
 // ── Module init ───────────────────────────────────────────────────────────────
 export function initHelp() {
-  // Render shortcut bar from saved prefs
   renderShortcutBar();
 
   // ── Help modal ──────────────────────────────────────────────────────────────
   helpBtn.addEventListener('click', () => openHelpModal('shortcuts'));
-
   helpCloseBtn.addEventListener('click', closeHelpModal);
 
-  helpOverlay.addEventListener('mousedown', e => {
-    _helpMouseDownOnOverlay = (e.target === helpOverlay);
-  });
+  // Backdrop click
+  let _mdOnOverlay = false;
+  helpOverlay.addEventListener('mousedown', e => { _mdOnOverlay = (e.target === helpOverlay); });
   helpOverlay.addEventListener('click', e => {
-    if (e.target === helpOverlay && _helpMouseDownOnOverlay) closeHelpModal();
-    _helpMouseDownOnOverlay = false;
+    if (e.target === helpOverlay && _mdOnOverlay) closeHelpModal();
+    _mdOnOverlay = false;
   });
 
   helpNavBtns.forEach(btn => {
     btn.addEventListener('click', () => _activateSection(btn.dataset.section));
   });
 
-  // Suppress context menu inside the modal
   document.getElementById('help-modal')
     .addEventListener('contextmenu', e => e.preventDefault());
 
@@ -194,7 +185,6 @@ export function initHelp() {
 
   scChips.addEventListener('click', handleChipClick);
 
-  // Exit edit mode on outside click
   document.addEventListener('click', e => {
     if (_scEditing && !shortcutBar.contains(e.target)) exitEditMode();
   });

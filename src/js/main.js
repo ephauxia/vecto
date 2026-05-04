@@ -1,10 +1,8 @@
 // ── VECTO / main.js ───────────────────────────────────────────────────────────
 // Application entry point.
-// Imports all modules, wires cross-module callbacks, registers file/URL
-// handlers, drag-drop, and keyboard shortcuts.
 
 import { state, hashKey }                        from './state.js';
-import { notif, closeAllPanels }                 from './ui.js';
+import { notif, closeAllPanels, modalManager }   from './ui.js';
 import { initPlayer, playIndex, destroyEngines,
          resetPlayerUI, toggleTrueFS, toggleWFS,
          toggleSpeedDialog, closeSpeedDialog,
@@ -26,29 +24,28 @@ import { initAppSettings, openAppSettings,
 import { initCors }                               from './cors.js';
 
 // ── DOM refs used only in main.js ─────────────────────────────────────────────
-const video         = document.getElementById('video');
-const urlInput      = document.getElementById('url-input');
-const urlAdd        = document.getElementById('url-add');
-const playerWrap    = document.getElementById('player-wrap');
-const dropOverlay   = document.getElementById('drop-overlay');
-const subSetPanel   = document.getElementById('sub-settings-panel');
-const subBtn        = document.getElementById('sub-btn');
-const speedMenu     = document.getElementById('speed-menu');
-const speedDialog   = document.getElementById('speed-dialog');
-const settingsPanel = document.getElementById('settings-panel');
-const histOverlay   = document.getElementById('history-overlay');
-const corsWarnOverlay = document.getElementById('cors-warn-overlay');
-const notifEl       = document.getElementById('notif');
-const queueBtn      = document.getElementById('queue-btn');
-const tempBadge     = document.getElementById('temp-badge');
+const video           = document.getElementById('video');
+const urlInput        = document.getElementById('url-input');
+const urlAdd          = document.getElementById('url-add');
+const playerWrap      = document.getElementById('player-wrap');
+const dropOverlay     = document.getElementById('drop-overlay');
+const subSetPanel     = document.getElementById('sub-settings-panel');
+const subBtn          = document.getElementById('sub-btn');
+const speedMenu       = document.getElementById('speed-menu');
+const speedDialog     = document.getElementById('speed-dialog');
+const settingsPanel   = document.getElementById('settings-panel');
+const histOverlay     = document.getElementById('history-overlay');
+const notifEl         = document.getElementById('notif');
+const queueBtn        = document.getElementById('queue-btn');
+const tempBadge       = document.getElementById('temp-badge');
 
 // ── Modal guard ───────────────────────────────────────────────────────────────
+// Keyboard shortcuts are suppressed while any overlay modal is open.
+// modalManager.getCurrent() returns the topmost open modal id, or null.
+// History modal is not yet in modalManager; check it directly for now.
 const _anyModalOpen = () =>
-  histOverlay.classList.contains('open')      ||
-  corsWarnOverlay.classList.contains('open')  ||
-  isHelpOpen()                                ||
-  isAppSettingsOpen();
-  // Round 3: || authOverlay.classList.contains('open')
+  modalManager.getCurrent() !== null ||
+  histOverlay.classList.contains('open');
 
 // ── Cross-module callback wiring ──────────────────────────────────────────────
 setPlayerCallbacks({ playIndex, destroyEngines, resetPlayerUI });
@@ -269,16 +266,22 @@ document.addEventListener('keydown', async e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key !== 'Escape' && _anyModalOpen()) return;
 
+  // Escape: close the topmost modal in the modalManager stack first,
+  // then fall through to player panels if the stack is empty.
   if (e.key === 'Escape') {
-    if (isHelpOpen())                                  { closeHelpModal();      e.preventDefault(); return; }
-    if (isAppSettingsOpen())                           { closeAppSettings();    e.preventDefault(); return; }
-    if (corsWarnOverlay.classList.contains('open'))    { corsWarnOverlay.classList.remove('open'); e.preventDefault(); return; }
-    if (histOverlay.classList.contains('open'))        { closeHistoryModal();   e.preventDefault(); return; }
-    if (speedDialog.classList.contains('open'))        { closeSpeedDialog();    e.preventDefault(); return; }
-    if (settingsPanel.classList.contains('open'))      { closeSettings();       e.preventDefault(); }
+    const top = modalManager.getCurrent();
+    if (top) {
+      modalManager.close(top);
+      e.preventDefault();
+      return;
+    }
+    if (histOverlay.classList.contains('open'))   { closeHistoryModal();  e.preventDefault(); return; }
+    if (speedDialog.classList.contains('open'))   { closeSpeedDialog();   e.preventDefault(); return; }
+    if (settingsPanel.classList.contains('open')) { closeSettings();      e.preventDefault(); }
     return;
   }
 
+  // Space — play/pause or hold for 2× temp speed
   if (e.code === 'Space' && !e.repeat) {
     e.preventDefault();
     state.spaceDown   = true;

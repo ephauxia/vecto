@@ -3,9 +3,6 @@
 // speed dialog, tracks & quality panel, album art, loop mode, PiP,
 // frame capture, and the history recording hook.
 //
-// NOTE: state.js must include `historyPaused: false` in the state object.
-// history.js toggles state.historyPaused; player.js reads it in saveToHistory.
-//
 // Exports: initPlayer, playIndex, destroyEngines, resetPlayerUI,
 //          saveToHistory, openFileLocation, isAudioFile, readAudioMeta,
 //          toggleTrueFS, toggleWFS, toggleSpeedDialog, closeSpeedDialog,
@@ -17,11 +14,12 @@ import { state, fmt, escHtml,
 import { notif, closeAllPanels }                       from './ui.js';
 import { savePosition, getSaved, clearSaved,
          loadHistRaw, saveHistRaw,
-         getHistDays, HIST_MAX }                         from './settings.js';
+         getHistDays, HIST_MAX }                       from './settings.js';
 import { loadItemSubtitles }                           from './subtitles.js';
 import { renderPlaylist, renderFsQueue,
          revokeItemSubs, hideResumeBar,
          showResumeBar, hideFsQueue }                  from './queue.js';
+import { wrapUrl, getHlsCorsConfig }                   from './cors.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const video         = document.getElementById('video');
@@ -67,12 +65,12 @@ const resizeHandle  = document.getElementById('resize-handle');
 const tempBadge     = document.getElementById('temp-badge');
 
 // ── Module-local state ────────────────────────────────────────────────────────
-let _saveThrottle = null;
-let _resumeItem   = null;  // item pending loadedmetadata before resume bar shows
-let _hideArtTimer = null;
+let _saveThrottle     = null;
+let _resumeItem       = null;
+let _hideArtTimer     = null;
 let _pendingSeekRatio = null;
 let _isDraggingProg   = false;
-let _dragRatio        = 0;      
+let _dragRatio        = 0;
 
 // ── Engine management ─────────────────────────────────────────────────────────
 export function destroyEngines() {
@@ -82,15 +80,26 @@ export function destroyEngines() {
 
 // ── Source loading ────────────────────────────────────────────────────────────
 function loadSrc(src) {
+  // src is always the original item URL — used for type detection.
+  // effectiveSrc is what actually gets loaded (may be wrapped through proxy).
+  const effectiveSrc = wrapUrl(src);
   destroyEngines();
   video.src = '';
 
+  // Type detection always on original URL — proxy URL has no extension.
   const isHLS  = /\.m3u8($|\?)/i.test(src);
   const isDASH = /\.mpd($|\?)/i.test(src);
 
   if (isHLS && window.Hls && Hls.isSupported()) {
-    state.hlsInst = new Hls({ enableWorker: true, maxBufferLength: 30 });
-    state.hlsInst.loadSource(src);
+    // Merge base config with CORS routing config (empty object when CORS off).
+    // xhrSetup / fetchSetup in getHlsCorsConfig() route every segment request
+    // (not just the manifest) through the local proxy.
+    const hlsConfig = Object.assign(
+      { enableWorker: true, maxBufferLength: 30 },
+      getHlsCorsConfig()
+    );
+    state.hlsInst = new Hls(hlsConfig);
+    state.hlsInst.loadSource(effectiveSrc);
     state.hlsInst.attachMedia(video);
     state.hlsInst.on(Hls.Events.MANIFEST_PARSED, () => {
       video.play().catch(() => {});
@@ -107,7 +116,9 @@ function loadSrc(src) {
     state.dashInst.updateSettings({
       streaming: { abr: { autoSwitchBitrate: { video: true, audio: true } } },
     });
-    state.dashInst.initialize(video, src, true);
+    // DASH: proxy wraps initial manifest URL. Segment-level CORS bypass for
+    // DASH is not implemented in this round.
+    state.dashInst.initialize(video, effectiveSrc, true);
     state.dashInst.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
       if (state.dashInst.isDynamic()) {
         state.dashInst.updateSettings({ streaming: { lowLatencyEnabled: true } });
@@ -118,14 +129,14 @@ function loadSrc(src) {
       notif('DASH Error: ' + (e.error ? e.error.message : 'Stream error'));
     });
   } else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = src;
+    video.src = effectiveSrc;
     video.play().catch(() => {});
   } else {
-    video.src = src;
+    video.src = effectiveSrc;
     video.play().catch(() => {});
   }
 
-  emptyState.style.opacity      = '0';
+  emptyState.style.opacity       = '0';
   emptyState.style.pointerEvents = 'none';
 }
 
@@ -155,6 +166,7 @@ function histType(url) {
 
 export function saveToHistory(item) {
   if (!item || state.historyPaused) return;
+  // item.url is always the original URL (loadSrc wraps internally, never mutates item).
   const type   = histType(item.url);
   const rawUrl = type === 'local' ? null : item.url;
   const key    = item.resumeKey || hashKey(item.title + (rawUrl || ''));
@@ -169,13 +181,15 @@ export function saveToHistory(item) {
     if (item.filePath && !ex.filePath)    ex.filePath = item.filePath;
   } else {
     hist.push({
-      id:        now + '_' + Math.random().toString(36).slice(2),
+      id:         now + '_' + Math.random().toString(36).slice(2),
       key, title: item.title, rawUrl, type,
-      duration:  item.dur > 0 ? item.dur : -1,
+      duration:   item.dur > 0 ? item.dur : -1,
       lastPlayed: now, playCount: 1,
-      filePath:  item.filePath || null,
+      filePath:   item.filePath || null,
     });
   }
+  // getHistDays() reads the user-set value from localStorage at call time,
+  // so changes in App Settings take effect on the very next history write.
   const cutoff = now - getHistDays() * 86400000;
   saveHistRaw(hist.filter(h => h.lastPlayed >= cutoff).slice(-HIST_MAX));
 }
@@ -337,7 +351,6 @@ export function populateSettings() {
   spBody.innerHTML = '';
   let hasAny = false;
 
-  // Quality
   if (state.hlsInst?.levels?.length > 1) {
     hasAny = true;
     const sec = _makeSection('QUALITY');
@@ -367,7 +380,6 @@ export function populateSettings() {
     }
   }
 
-  // Audio tracks
   if (state.hlsInst?.audioTracks?.length > 1) {
     hasAny = true;
     const sec = _makeSection('AUDIO TRACK');
@@ -430,10 +442,10 @@ function _isAnyFS() {
 }
 
 function _updateFsUI() {
-  fsBtn.title             = _isAnyFS()
+  fsBtn.title          = _isAnyFS()
     ? 'Exit fullscreen (F / Shift+F)'
     : 'Fullscreen (F) · Windowed (Shift+F)';
-  fsQBtn.style.display    = document.fullscreenElement ? '' : 'none';
+  fsQBtn.style.display = document.fullscreenElement ? '' : 'none';
   if (!_isAnyFS()) hideFsQueue();
 }
 
@@ -605,7 +617,6 @@ export function initPlayer() {
       if (!cur.dur || cur.dur <= 0) {
         cur.dur = Math.floor(video.duration);
         renderPlaylist();
-        // Back-fill duration in history if it was unknown at play time
         const histKey = cur.resumeKey || hashKey(cur.title + (cur.url.startsWith('blob:') ? '' : cur.url));
         const h       = loadHistRaw();
         const entry   = h.find(e => e.key === histKey);
@@ -638,7 +649,6 @@ export function initPlayer() {
     if (state.currentIdx < state.playlist.length - 1) playIndex(state.currentIdx + 1);
   });
 
-  // Throttled position save on timeupdate
   video.addEventListener('timeupdate', () => {
     if (_saveThrottle) return;
     _saveThrottle = setTimeout(() => {
@@ -749,7 +759,7 @@ export function initPlayer() {
   settingsPanel.addEventListener('click', e => e.stopPropagation());
   gearBtn.addEventListener('click', e => { toggleSettings(); e.stopPropagation(); });
 
-  // ── Fullscreen (single registration each) ────────────────────────────────────
+  // ── Fullscreen ────────────────────────────────────────────────────────────────
   fsBtn.addEventListener('click', e => {
     e.stopPropagation();
     e.shiftKey ? toggleWFS() : toggleTrueFS();
@@ -767,18 +777,18 @@ export function initPlayer() {
   clearBtn.addEventListener('click', () => {
     state.playlist.forEach(item => {
       revokeItemSubs(item);
-      if (item.url?.startsWith('blob:'))             URL.revokeObjectURL(item.url);
-      if (item.audioMeta?.art?.startsWith('blob:'))  URL.revokeObjectURL(item.audioMeta.art);
+      if (item.url?.startsWith('blob:'))            URL.revokeObjectURL(item.url);
+      if (item.audioMeta?.art?.startsWith('blob:')) URL.revokeObjectURL(item.audioMeta.art);
     });
-    state.playlist         = [];
-    state.currentIdx       = -1;
-    state.selectedIndices  = new Set();
+    state.playlist        = [];
+    state.currentIdx      = -1;
+    state.selectedIndices = new Set();
     renderPlaylist();
     Array.from(video.querySelectorAll('track')).forEach(t => t.remove());
     destroyEngines();
     video.src = '';
     resetPlayerUI();
-    emptyState.style.opacity      = '1';
+    emptyState.style.opacity       = '1';
     emptyState.style.pointerEvents = '';
   });
 
@@ -807,8 +817,8 @@ export function initPlayer() {
     if (!state.isResizing) return;
     const delta = state.resizeStartX - e.clientX;
     const newW  = Math.max(150, Math.min(600, state.resizeStartW + delta));
-    state.panelW               = newW;
-    playlistPanel.style.width  = newW + 'px';
+    state.panelW              = newW;
+    playlistPanel.style.width = newW + 'px';
   });
   document.addEventListener('mouseup', () => {
     if (!state.isResizing) return;
@@ -848,15 +858,14 @@ export function initPlayer() {
     }
     _touchLPActive = false;
   };
-  video.addEventListener('touchend',   () => _handleTouchRelease(false), { passive: true });
-  video.addEventListener('touchcancel',() => _handleTouchRelease(true),  { passive: true });
+  video.addEventListener('touchend',    () => _handleTouchRelease(false), { passive: true });
+  video.addEventListener('touchcancel', () => _handleTouchRelease(true),  { passive: true });
 
   // ── Initial UI state ───────────────────────────────────────────────────────────
   _updateLoopBtn();
   fsQBtn.style.display = 'none';
   showControls();
 
-  // Reveal Tauri window after dark theme paints
   if (window.__TAURI__) {
     setTimeout(() => {
       window.__TAURI__.window.getCurrentWindow().show().catch(console.error);

@@ -35,7 +35,6 @@
       <input type="file" id="file-input" multiple accept="video/*,audio/*,.m3u,.m3u8,.mpd,.mkv,.avi,.mov,.wmv,.flv,.ts,.webm">
       <button class="btn" id="queue-btn">QUEUE <span id="queue-count"></span></button>
       <button class="btn" id="history-btn" style="margin-left:auto" title="Playback History">↺ HISTORY</button>
-      <button id="cors-btn" title="CORS Bypass: OFF — click to enable">CORS</button>
       <button class="btn" id="help-btn" title="Help">?</button>
       <button id="app-gear-btn" title="App Settings">⚙</button>
     </div>
@@ -537,22 +536,19 @@
         </div>
 
         <div class="as-section as-tauri-only">
-          <div class="as-section-label">SESSION <span class="as-desktop-tag">DESKTOP</span></div>
+          <div class="as-section-label">DESKTOP <span class="as-desktop-tag">DESKTOP</span></div>
           <div class="as-row">
-            <div>
-              <div class="as-label">Remember window size</div>
-              <div class="as-sublabel">Restores position on relaunch</div>
+            <div class="as-label-with-help">
+              <span class="as-label">CORS Bypass</span>
+              <button id="as-cors-help-btn" class="as-inline-help" title="What is CORS Bypass?">?</button>
             </div>
             <label class="switch">
-              <input type="checkbox" id="as-window-mem-toggle" checked>
+              <input type="checkbox" id="as-cors-toggle">
               <span class="slider"></span>
             </label>
           </div>
-          <div class="as-row">
-            <div>
-              <div class="as-label">Remember CORS Bypass state</div>
-              <div class="as-sublabel">Re-enables proxy automatically on launch</div>
-            </div>
+          <div class="as-row" id="as-cors-mem-row">
+            <span class="as-label">Remember state across sessions</span>
             <label class="switch">
               <input type="checkbox" id="as-cors-mem-toggle">
               <span class="slider"></span>

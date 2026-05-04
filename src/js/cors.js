@@ -1,91 +1,129 @@
 // ── VECTO / cors.js ───────────────────────────────────────────────────────────
-// CORS Bypass toggle button + warning modal.
+// CORS Bypass toggle button, warning modal, and axum proxy lifecycle.
 //
-// The actual HTTP proxy (axum) is implemented in Round 4 alongside the
-// Telegram streaming server. The two Tauri commands it will call are:
+// The axum proxy (Rust) listens on 127.0.0.1:<dynamic-port>.
+// Route: GET /proxy?url=<encoded-original-url>
+// It forwards the request to the real server and injects CORS headers on the
+// response. Range headers are forwarded so video seeking works correctly.
 //
-//   window.__TAURI__.core.invoke('cors_proxy_start') → Promise<number> (port)
-//   window.__TAURI__.core.invoke('cors_proxy_stop')  → Promise<void>
+// URL wrapping: wrapUrl(originalUrl) returns a proxy URL when CORS is enabled,
+// or the original URL unchanged when disabled. player.js imports wrapUrl and
+// applies it in loadSrc — the playlist items always store the original URL,
+// so history and resume keys are unaffected.
 //
-// Everything else — the button, warning modal, "don't show again", state
-// persistence, and the "remember CORS state" boot restore — is fully wired.
+// HLS segment routing: when CORS is enabled, the HLS instance is created with
+// xhrSetup/fetchSetup that route every segment request through the proxy too,
+// not just the manifest. This is passed as a config object to player.js via
+// getHlsCorsConfig().
 //
-// Exports: initCors, isCorsEnabled
+// Exports: initCors, isCorsEnabled, wrapUrl, getHlsCorsConfig
 
-import { getPref, setPref, KEYS } from './settings.js';
-import { notif }                   from './ui.js';
-import { openHelpModal }           from './help.js';
+import { getPref, setPref, KEYS }  from './settings.js';
+import { notif, modalManager }      from './ui.js';
+import { openHelpModal }            from './help.js';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const corsBtn         = document.getElementById('cors-btn');
-const warnOverlay     = document.getElementById('cors-warn-overlay');
-const warnYes         = document.getElementById('cors-warn-yes');
-const warnNo          = document.getElementById('cors-warn-no');
-const warnSkipChk     = document.getElementById('cors-warn-skip');
-const warnHelpBtn     = document.getElementById('cors-warn-help');
+const warnOverlay = document.getElementById('cors-warn-overlay');
+const warnYes     = document.getElementById('cors-warn-yes');
+const warnNo      = document.getElementById('cors-warn-no');
+const warnSkipChk = document.getElementById('cors-warn-skip');
+const warnHelpBtn = document.getElementById('cors-warn-help');
+
+// Shorthand helpers to sync the settings-modal toggle without creating a
+// hard import cycle. Both elements may be absent (web build), so guard.
+function _syncToggleEl(checked) {
+  const el = document.getElementById('as-cors-toggle');
+  if (el) el.checked = checked;
+}
+
 
 // ── Module-local state ────────────────────────────────────────────────────────
-let _enabled            = false;
-let _mouseDownOnOverlay = false;
+let _enabled   = false;
+let _proxyPort = null;
+
+// ── Public API ────────────────────────────────────────────────────────────────
 
 export function isCorsEnabled() { return _enabled; }
+
+/**
+ * Wrap a URL through the local proxy if CORS bypass is active.
+ * Blob URLs, asset.localhost URLs, and already-proxied URLs are passed through.
+ */
+export function wrapUrl(url) {
+  if (!_enabled || !_proxyPort || !url) return url;
+  if (url.startsWith('blob:') ||
+      /asset\.localhost/i.test(url) ||
+      url.startsWith(`http://127.0.0.1:${_proxyPort}`)) return url;
+  return `http://127.0.0.1:${_proxyPort}/proxy?url=${encodeURIComponent(url)}`;
+}
+
+/**
+ * Return extra config for the HLS.js constructor that routes all segment
+ * requests through the proxy when CORS bypass is enabled.
+ * Returns {} when CORS is off or proxy port is unknown.
+ */
+export function getHlsCorsConfig() {
+  if (!_enabled || !_proxyPort) return {};
+  return {
+    xhrSetup:   (xhr, url)            => { xhr.open('GET', wrapUrl(url), true); },
+    fetchSetup: (context, initParams) => new Request(wrapUrl(context.url), initParams),
+  };
+}
 
 // ── Internal enable / disable ─────────────────────────────────────────────────
 
 async function _enable() {
-  // ── Round 4: replace this block with the real proxy start ──────────────────
-  // const port = await window.__TAURI__.core.invoke('cors_proxy_start');
-  // store port somewhere accessible to handleUrl() in main.js
-  // ──────────────────────────────────────────────────────────────────────────
+  try {
+    _proxyPort = await window.__TAURI__.core.invoke('cors_proxy_start');
+  } catch (e) {
+    notif('Proxy failed to start: ' + e);
+    return;
+  }
   _enabled = true;
   corsBtn.classList.add('btn-cors-on');
   corsBtn.title = 'CORS Bypass: ON — click to disable';
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, true);
   notif('CORS Bypass enabled');
+  _syncToggleEl(true);
 }
 
 async function _disable() {
-  // ── Round 4: replace this block with the real proxy stop ───────────────────
-  // await window.__TAURI__.core.invoke('cors_proxy_stop');
-  // ──────────────────────────────────────────────────────────────────────────
-  _enabled = false;
+  try {
+    await window.__TAURI__.core.invoke('cors_proxy_stop');
+  } catch (e) {
+    // Proxy may already be stopped; continue regardless
+  }
+  _enabled   = false;
+  _proxyPort = null;
   corsBtn.classList.remove('btn-cors-on');
   corsBtn.title = 'CORS Bypass: OFF — click to enable';
   if (getPref(KEYS.CORS_MEM)) setPref(KEYS.CORS_STATE, false);
   notif('CORS Bypass disabled');
+  _syncToggleEl(false);
 }
 
 // ── Warning modal ─────────────────────────────────────────────────────────────
 
 function _openWarning() {
   warnSkipChk.checked = false;
-  warnOverlay.classList.add('open');
+  modalManager.open('cors-warn-overlay');
 }
 
 function _closeWarning() {
-  warnOverlay.classList.remove('open');
+  modalManager.close('cors-warn-overlay');
 }
 
-function isWarnOpen() {
-  return warnOverlay.classList.contains('open');
-}
-
-// ── Toggle (called on button click) ──────────────────────────────────────────
+// ── Toggle (button click) ─────────────────────────────────────────────────────
 
 async function _toggle() {
-  if (_enabled) {
-    await _disable();
-    return;
-  }
+  if (_enabled) { await _disable(); return; }
 
-  // Not a Tauri build — silently skip (button is hidden in web mode anyway)
   if (!window.__TAURI__) {
     notif('CORS Bypass requires the desktop app');
     return;
   }
 
-  const skip = getPref(KEYS.CORS_WARN_SKIP) === true;
-  if (skip) {
+  if (getPref(KEYS.CORS_WARN_SKIP) === true) {
     await _enable();
   } else {
     _openWarning();
@@ -94,50 +132,48 @@ async function _toggle() {
 
 // ── Module init ───────────────────────────────────────────────────────────────
 
-export function initCors() {
-  // Hide the button entirely in non-Tauri builds
-  if (!window.__TAURI__) {
-    corsBtn.style.display = 'none';
-    return;
+export async function toggleCors() {
+  if (_enabled) { await _disable(); return; }
+  if (!window.__TAURI__) { notif('CORS Bypass requires the desktop app'); return; }
+  if (getPref(KEYS.CORS_WARN_SKIP) === true) {
+    await _enable();
+  } else {
+    _openWarning();
   }
+}
 
-  // ── Button ───────────────────────────────────────────────────────────────────
-  corsBtn.addEventListener('click', _toggle);
+export function initCors() {
+  if (!window.__TAURI__) return;
 
-  // ── Warning modal: Yes ────────────────────────────────────────────────────────
+  // ── Warning: Yes ──────────────────────────────────────────────────────────
   warnYes.addEventListener('click', async () => {
     if (warnSkipChk.checked) setPref(KEYS.CORS_WARN_SKIP, true);
     _closeWarning();
     await _enable();
   });
 
-  // ── Warning modal: No ─────────────────────────────────────────────────────────
-  warnNo.addEventListener('click', _closeWarning);
-
-  // ── Warning modal: backdrop click ─────────────────────────────────────────────
-  warnOverlay.addEventListener('mousedown', e => {
-    _mouseDownOnOverlay = (e.target === warnOverlay);
-  });
-  warnOverlay.addEventListener('click', e => {
-    if (e.target === warnOverlay && _mouseDownOnOverlay) _closeWarning();
-    _mouseDownOnOverlay = false;
-  });
-
-  // ── Warning modal: Help link → CORS section ───────────────────────────────────
-  // Note: warning modal does not auto-restore after Help closes in this round.
-  // Full modal stack (child→parent restore) is a dedicated modalManager pass.
-  warnHelpBtn.addEventListener('click', () => {
+  // ── Warning: No — revert the toggle checkbox ──────────────────────────────
+  warnNo.addEventListener('click', () => {
     _closeWarning();
-    openHelpModal('cors');
+    _syncToggleEl(false); // user cancelled; uncheck the toggle they just flipped
   });
 
-  // ── Warning modal: context menu suppression ───────────────────────────────────
+  let _mdOnOverlay = false;
+  warnOverlay.addEventListener('mousedown', e => { _mdOnOverlay = (e.target === warnOverlay); });
+  warnOverlay.addEventListener('click', e => {
+    if (e.target === warnOverlay && _mdOnOverlay) {
+      _closeWarning();
+      _syncToggleEl(false);
+    }
+    _mdOnOverlay = false;
+  });
+
+  warnHelpBtn.addEventListener('click', () => openHelpModal('cors'));
+
   document.getElementById('cors-warn-modal')
     .addEventListener('contextmenu', e => e.preventDefault());
 
-  // ── Boot restore: re-enable if remembered ────────────────────────────────────
-  // Only fires if the user has both CORS_MEM and CORS_STATE set.
-  // Runs silently — no warning modal, no notif, just restores previous state.
+  // ── Boot restore ──────────────────────────────────────────────────────────
   if (getPref(KEYS.CORS_MEM) && getPref(KEYS.CORS_STATE)) {
     _enable();
   }
